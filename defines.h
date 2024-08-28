@@ -9,6 +9,7 @@ namespace cons {
     typedef unsigned char con_ubyte;
     typedef char con_basic;
     typedef wchar_t con_wide;
+    typedef float con_norm;
 
     struct ENUMS {
         enum ERROR_TYPES {
