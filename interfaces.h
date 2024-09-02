@@ -114,19 +114,6 @@ namespace cons {
         }
     };
 
-    struct buffer_sink;
-    struct buffer_source;
-
-    struct i_norm_dimension {
-        virtual con_norm getNormWidth() = 0;
-        virtual con_norm getNormHeight() = 0;
-    };
-
-    struct i_norm_dimension_set : public i_norm_dimension {
-        virtual void setNormWidth(con_norm x) = 0;
-        virtual void setNormHeight(con_norm y) = 0;
-    };
-
     template<typename T1, typename T2>
     struct i_dimension_convert {
         virtual T2 getWidth(T1 v) = 0;
@@ -135,10 +122,10 @@ namespace cons {
         virtual T2 getHeight(T1 v) = 0;
         virtual T1 getHeight(T2 v) = 0;
         virtual T1 getHeight() = 0;
-        virtual T1 get(T1 x, T1 y) {
+        T1 get(const T1 &x, const T1 &y) const {
             return x * getWidth() + y;   
         }
-        virtual T1 get(T2 x, T2 y) {
+        T1 get(const T2 &x, const T2 &y) const {
             return get(getWidth(x), getHeight(y));
         }
     };
@@ -146,7 +133,9 @@ namespace cons {
     struct dim_prov : public i_dimension_convert<con_size, con_norm> {
         dim_prov(con_size width, con_size height) : width(width), height(height) {}
         dim_prov(): width(0), height(0) {}
+
         con_size width, height;
+
         con_size getWidth(con_norm v) override {
             return v * getWidth();
         }
@@ -173,15 +162,18 @@ namespace cons {
         }
     };
 
-    template<typename BUFFER_TYPE>
+    template<typename BT>
+    struct i_buffer_source;
+    template<typename BT>
+    struct i_buffer_sink;
+
+    template<typename BT>
     struct i_buffer_sink {
-        virtual void write(const buffer_source* source) = 0;
-        virtual void write(con_norm x, con_norm y, BUFFER_TYPE value) = 0;
+        virtual void write(con_norm x, con_norm y, BT value) = 0;
     };
     
-    template<typename BUFFER_TYPE>
+    template<typename BT>
     struct i_buffer_source {
-        virtual void read(buffer_sink* sink) = 0;
-        virtual BUFFER_TYPE read(con_norm x, con_norm y) = 0;
+        virtual BT read(con_norm x, con_norm y) = 0;
     };
 }

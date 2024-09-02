@@ -33,4 +33,34 @@ namespace cons {
     struct con_type {
         const con_basic *name;
     };
+
+    template<typename character, typename color, typename alpha>
+    struct _cc {
+        character ch;
+        color co;
+        alpha a;
+    };
+
+    typedef _cc<con_basic, con_color, con_color> cpix_basic;
+    typedef _cc<con_wide, con_color, con_color> cpix_wide;
+
+    template<typename _bit>
+    struct _pixel {
+        _pixel()
+        :r(0), g(0), b(0), a(255) {}
+        _pixel(_bit r, _bit g, _bit b)
+        :_pixel(r, g, b, 255) {}
+        _pixel(_bit r, _bit g, _bit b, _bit a)
+        :r(r), g(g), b(b), a(a) {}
+        _bit r,g,b,a;
+    };
+
+    typedef _pixel<con_ubyte> pixel;
+
+    template<typename T>
+    struct _2d {
+        T x, y;
+        _2d(T x, T y) : x(x), y(y) {}
+        _2d() : x(0), y(0) {}
+    };
 }

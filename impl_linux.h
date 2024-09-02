@@ -152,4 +152,7 @@ namespace cons {
             }
         }    
     };
+
+    typedef console_ncurses_color<console_ncurses> console_color;
+    typedef console_ncurses console;
 }

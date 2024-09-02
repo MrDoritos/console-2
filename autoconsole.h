@@ -1,6 +1,7 @@
 #pragma once
-#include "impl_linux.h"
+//#include "impl_linux.h"
+#include CONSOLE_IMPL
 
 namespace cons {
-    automatic_console<console_ncurses_color<console_ncurses>> con;
+    automatic_console<console_color> con;
 }
