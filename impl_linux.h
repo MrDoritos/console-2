@@ -7,6 +7,7 @@
 
 namespace cons {
     struct console_ncurses : public i_console_basic {
+
         winsize w;
         WINDOW* win;
         SCREEN* scr;
@@ -28,6 +29,8 @@ namespace cons {
             scr = nullptr;
             setlocale(LC_ALL, "");
 
+            setWidth(getWidth());
+            setHeight(getHeight());
 
             curs_set_sp(getScreen(), 0);
             set_escdelay_sp(getScreen(), 0);
@@ -62,10 +65,7 @@ namespace cons {
 
 
         ssize_t write(const con_basic* buf, size_t count) override {
-            for (size_t i = 0; i < count; i++) {
-                //addch(((char*)buf)[i]);
-                waddch(getWindow(), ((char*)buf)[i]);
-            }
+            waddnstr(getWindow(), buf, count);
             this->refreshCon();
             return count;
         }
@@ -100,6 +100,9 @@ namespace cons {
         virtual WINDOW* getWindow() { return win; }
         virtual SCREEN* getScreen() { return scr; }
         virtual void flush() { refreshCon(); }
+        void sleep(int millis) override {
+            usleep(millis * 1000);
+        }
     };
 
     template<typename CON_NCURSES>
@@ -153,6 +156,6 @@ namespace cons {
         }    
     };
 
-    typedef console_ncurses_color<console_ncurses> console_color;
     typedef console_ncurses console;
+    typedef console_ncurses_color<console> console_color;
 }

@@ -63,4 +63,30 @@ namespace cons {
         _2d(T x, T y) : x(x), y(y) {}
         _2d() : x(0), y(0) {}
     };
+
+    template<typename T>
+    struct _2dlength {
+        T width, height;
+        _2dlength(T width, T height) : width(width), height(height) {}
+        _2dlength() : _2dlength(0,0) {}
+    };
+
+    template<typename T>
+    struct _2dsize : _2d<T>, _2dlength<T> {
+        _2dsize(T x, T y, T width, T height) : _2d<T>(x, y), _2dlength<T>(width, height) {}
+        _2dsize(T width, T height) : _2dlength<T>(0,0,width,height) {}
+        _2dsize() : _2d<T>(), _2dlength<T>() {}
+    };
+
+    template<typename T>
+    struct _2dpair {
+        _2d<T> start, end;
+    };
+
+    typedef _2d<con_size> posi;
+    typedef _2d<con_norm> posf;
+    typedef _2dsize<con_size> sizei;
+    typedef _2dsize<con_norm> sizef;
+    typedef _2dpair<con_size> pairi;
+    typedef _2dpair<con_norm> pairf;
 }

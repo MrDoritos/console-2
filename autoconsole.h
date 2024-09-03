@@ -1,5 +1,7 @@
 #pragma once
-//#include "impl_linux.h"
+#ifndef CONSOLE_IMPL
+#define CONSOLE_IMPL "impl_linux.h"
+#endif
 #include CONSOLE_IMPL
 
 namespace cons {

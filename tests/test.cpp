@@ -6,13 +6,31 @@
 #include <string>
 #include <string.h>
 
-#define CONSOLE_IMPL "impl_linux.h"
-#include "autoconsole.h"
+#include "../autoconsole.h"
+#include "../buffers.h"
 
 using namespace cons;
 
 int main() {
     con.write("Hello, world!\n");
+
+    using at = atlas<con_wide>;
+    using atf = atlas_fragment<con_wide>;
+
+    at atlas(8);
+
+    
+    if (atlas.load("textures.png")) {
+        con.write("Failed to load textures.png\n");
+        con.sleep(1000);
+        //return ENUMS::ERROR;
+    }
+    
+
+    atf frag = atlas.fragment({0, 0, 6, 6});
+    
+    //frag.copyTo((i_buffer_sink_dim)&con);
+    copyTo(&frag, &con);
 
     const con_wide *texts[] = {
         L"weirds: ▛▖ ▗▜ ▙ ▞▚ ",
