@@ -2,6 +2,11 @@
 #include "interfaces.h"
 
 namespace cons {
+    const sizef sample = {0,0,1,1};
+
+    /*
+    Will be used for fast copying (that's why it's separate from sampleTo)
+    */
     template<typename T1, typename T2>
     void copyTo(T1* source, T2* sink) {
         for (con_norm y = 0; y < sink->getSampleHeight(); y+=sink->getSampleHeightStep()) {
@@ -11,6 +16,9 @@ namespace cons {
         }
     }
 
+    /*
+    Will be used for fast copying (that's why it's separate from sampleTo)
+    */
     template<typename T1, typename T2>
     void copyTo(T1* source, T2* sink, sizef size) {
         for (con_norm y = 0; y < size.height; y+=sink->getSampleHeightStep()) {
@@ -18,6 +26,14 @@ namespace cons {
                 sink->writeSample(x + size.x, y + size.y, source->readSample(x / size.width, y / size.width));
             }
         }
+    }
+
+    /*
+    Sample from the sink dimensions the source one-by-one
+    */
+    template<typename T1, typename T2>
+    void sampleTo(T1 *source, T2* sink, sizef size = sample) {
+        copyTo(source, sink, size);
     }
 
     template<typename CH, typename CO, typename A>

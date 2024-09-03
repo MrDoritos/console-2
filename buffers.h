@@ -5,6 +5,9 @@
 #include "lib/stb_image.h"
 
 namespace cons {
+    /*
+    Read/Write memory buffer interface with dimensions
+    */
     template<typename BT>
     struct buffer_rw : public i_buffer_rw_dim<BT> {
         using ib = i_buffer_rw_dim<BT>;
@@ -104,6 +107,9 @@ namespace cons {
     typedef buffer_rw<con_color> buffer_color;
     typedef buffer_rw<pixel> buffer_pixel;
 
+    /*
+    pixel buffer + conversion buffer
+    */
     template<typename con_char>
     struct pixel_image : public buffer_pixel, public buffer_rw<con_char> {
         pixel_image(con_size width, con_size height) 
@@ -167,6 +173,9 @@ namespace cons {
     template<typename con_char>
     struct atlas_fragment;
 
+    /*
+    texture atlas
+    */
     template<typename con_char>
     struct atlas : public pixel_image<con_char> {
         int spriteSize;
@@ -177,6 +186,9 @@ namespace cons {
         atlas_fragment<con_char> fragment(sizei sprite_units);
     };
 
+    /*
+    maps to atlas
+    */
     template<typename BT>
     struct atlas_fragment : public i_buffer_rw_dim<BT> {
         using ib = i_buffer_rw_dim<BT>;
@@ -248,15 +260,8 @@ namespace cons {
             return 0;
         }
 
-
         void copyTo(i_buffer_sink_dim<BT>* buffer) override {
             cons::copyTo(this, buffer);
-        }
-
-        void clear() override {
-        }
-
-        void clear(con_size width, con_size height) override {
         }
     };
 

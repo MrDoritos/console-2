@@ -33,7 +33,7 @@ int main() {
     atf frag = atlas.fragment({1, 1, 1, 1});
     
     //copyTo((buffer_rw<con_wide>*)&atlas, &con);
-    copyTo(&frag, con.getUnicode(), {0.25, 0.25, 0.5, 0.5});
+    copyTo(frag.sink<con_wide>(), con.getUnicode(), {0.25, 0.25, 0.5, 0.5});
     //frag.copyTo((i_buffer_sink_dim)&con);
 
     const con_wide *texts[] = {

@@ -1,8 +1,12 @@
 #pragma once
 #include "defines.h"
 #include "functions.h"
+#include <cassert>
 
 namespace cons {
+    /*
+    Low quality 2D width/height interface
+    */
     template<typename T1, typename T2>
     struct i_dimension_convert {
         
@@ -31,6 +35,9 @@ namespace cons {
 
     typedef i_dimension_convert<con_size, con_norm> i_dim_std;
 
+    /*
+    Low quality 2D width/height implementation
+    */
     struct dim_prov : public i_dim_std {
         dim_prov(con_size width, con_size height) : width(width), height(height) {}
         dim_prov(): width(0), height(0) {}
@@ -83,10 +90,12 @@ namespace cons {
     template<typename BT>
     struct i_buffer_sink;
 
+    /*
+    Write interface, useful with dimensions
+    */
     template<typename BT>
     struct i_buffer_sink {
         virtual void writeSample(con_norm x, con_norm y, BT value) = 0;
-        //virtual void write(con_pos x, con_pos y, const BT* value, size_t start, size_t count) = 0;
         virtual void write(con_pos x, con_pos y, BT value) = 0;
         virtual ssize_t write(con_pos x, con_pos y, const BT *value) = 0;
         virtual ssize_t write(const BT* buf, size_t start, size_t count) = 0;
@@ -96,29 +105,41 @@ namespace cons {
         virtual void clear() = 0;
     };
     
+    /*
+    Read interface, useful with dimensions
+    */
     template<typename BT>
     struct i_buffer_source {
         virtual BT readSample(con_norm x, con_norm y) = 0;
         virtual BT read(con_pos x, con_pos y) = 0;
-        //virtual void read(con_pos x, con_pos y, BT* buf, size_t start, size_t count) = 0;
         virtual ssize_t read(BT* buf, size_t start, size_t count) = 0;
         virtual ssize_t read(BT* buf, size_t count) = 0;
     };
 
+    /*
+    Read/Write interface, useful with dimensions
+    */
     template<typename BT>
     struct i_buffer_rw : public i_buffer_source<BT>, public i_buffer_sink<BT>
     {
         i_buffer_rw() {}
     };    
 
+    /*
+    Write interface with dimensions
+    */
     template<typename BT>
     struct i_buffer_sink_dim : public dim_prov, public i_buffer_sink<BT> {
         i_buffer_sink_dim(con_size width, con_size height) : dim_prov(width, height) {}
         i_buffer_sink_dim() : dim_prov() {}
     };
 
+    /*
+    Read/Write interface with dimensions
+    */
     template<typename BT>
     struct i_buffer_rw_dim : public dim_prov, public i_buffer_rw<BT> {
+        template<typename T> i_buffer_rw_dim<T>* sink() { return this; }
         i_buffer_rw_dim(con_size width, con_size height) : dim_prov(width, height) {}
         i_buffer_rw_dim() : dim_prov() {}
 
@@ -153,11 +174,17 @@ namespace cons {
         virtual err_ret close() = 0;
     };
 
+    /*
+    Implement template console write/read
+    Write interface with dimensions
+    */
     template<typename T>
     struct i_console_sink : 
     public i_buffer_sink<T>,
     public virtual i_cursor_set,
     public virtual dim_prov {
+        template<typename ret> i_console_sink<ret>* sink() { return this; }
+
         ssize_t write(con_pos x, con_pos y, const T* text) override {
             this->setCursor(x, y);
             return this->write(text, getLength(text));
@@ -176,13 +203,17 @@ namespace cons {
             return this->write(buf, 0, count);
         }
         ssize_t write(const T* buf, size_t start, size_t count) override {
-            return 0;
+            assert(0);
         }
 
         void clear(con_pos width, con_pos height) override { }
         void clear() override { }
     };
 
+    /*
+    Ascii only console container
+    Write interface with dimensions
+    */
     template<typename ascii_dt>
     struct i_console_basic_ascii :
     public i_keyboard,
@@ -194,6 +225,10 @@ namespace cons {
         ascii *getAscii() { return this; }
     };
 
+    /*
+    Ascii and Unicode console container
+    Write interface with dimensions
+    */
     template<typename ascii_dt, typename unicode_dt>
     struct i_console_basic : 
     public i_console_basic_ascii<ascii_dt>,
