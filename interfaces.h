@@ -22,7 +22,7 @@ namespace cons {
         virtual void setHeight(T1 height) = 0;
 
         T1 get(const T1 &x, const T1 &y) {
-            return x * getWidth() + y;   
+            return (y * getWidth()) + x;   
         }
         T1 getSample(const T2 &x, const T2 &y) {
             return get(getWidth(x), getHeight(y));
