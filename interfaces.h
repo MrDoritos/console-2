@@ -139,11 +139,14 @@ namespace cons {
     */
     template<typename BT>
     struct i_buffer_rw_dim : public dim_prov, public i_buffer_rw<BT> {
-        template<typename T> i_buffer_rw_dim<T>* sink() { return this; }
+        template<typename DT>  i_buffer_rw_dim<DT>* sink() { return this; }
+        explicit operator i_buffer_rw_dim<BT>*() { return this; }
         i_buffer_rw_dim(con_size width, con_size height) : dim_prov(width, height) {}
         i_buffer_rw_dim() : dim_prov() {}
 
         virtual void copyTo(i_buffer_sink_dim<BT>* buffer) = 0;
+        void clear() override {}
+        void clear(con_pos x, con_pos y) override {}
     };
 
     struct i_keyboard {
@@ -183,7 +186,7 @@ namespace cons {
     public i_buffer_sink<T>,
     public virtual i_cursor_set,
     public virtual dim_prov {
-        template<typename ret> i_console_sink<ret>* sink() { return this; }
+        template<typename DT>  i_console_sink<DT>* sink() { return this; }
 
         ssize_t write(con_pos x, con_pos y, const T* text) override {
             this->setCursor(x, y);
@@ -221,6 +224,7 @@ namespace cons {
     public i_state,
     public i_console_sink<ascii_dt> {
         using ascii = i_console_sink<ascii_dt>;
+        using ascii::sink;
         virtual con_type getType() = 0;
         ascii *getAscii() { return this; }
     };
@@ -234,6 +238,7 @@ namespace cons {
     public i_console_basic_ascii<ascii_dt>,
     public i_console_sink<unicode_dt> {
         using unicode = i_console_sink<unicode_dt>;
+        using unicode::sink;
         unicode *getUnicode() { return this; }
     };
 }
