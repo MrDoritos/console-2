@@ -53,6 +53,9 @@ namespace cons {
         _pixel(_bit r, _bit g, _bit b, _bit a)
         :r(r), g(g), b(b), a(a) {}
         _bit r,g,b,a;
+        _bit value() {
+            return (int(r) + g + b) / _bit(3);
+        }
     };
 
     typedef _pixel<con_ubyte> pixel;

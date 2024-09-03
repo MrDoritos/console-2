@@ -48,10 +48,10 @@ namespace cons {
             return v / con_norm(getHeight());
         }
         con_norm getSampleWidthStep() override {
-            return 1.0 / con_norm(getWidth());
+            return 1.0f / con_norm(getWidth());
         }
         con_norm getSampleHeightStep() override {
-            return 1.0 / con_norm(getHeight());
+            return 1.0f / con_norm(getHeight());
         }
         con_size getWidth() override {
             return width;
@@ -69,10 +69,10 @@ namespace cons {
             return getWidth() * getHeight();
         } 
         con_norm getSampleWidth() override {
-            return 1.0 / con_norm(getWidth());
+            return 1.0f;
         }
         con_norm getSampleHeight() override {
-            return 1.0 / con_norm(getHeight());
+            return 1.0f;
         }
     };
 
@@ -165,6 +165,8 @@ namespace cons {
             return write(text, strlen(text));
         }
         void write(con_pos x, con_pos y, con_basic ch) override {
+            //#include <stdio.h>
+            //fprintf(stderr, "write(%i, %i, con_basic %c)\n", x, y, ch);
             setCursor(x, y);
             write(&ch, 1);
         }
@@ -199,6 +201,8 @@ namespace cons {
             return write(text, wcslen(text));
         }
         void write(con_pos x, con_pos y, con_wide ch) override {
+            //#include <stdio.h>
+            //fprintf(stderr, "write(%i, %i, con_wide %c)\n", x, y, ch);
             setCursor(x, y);
             write(&ch, 1);
         }

@@ -27,10 +27,11 @@ int main() {
     }
     
 
-    atf frag = atlas.fragment({0, 0, 6, 6});
+    atf frag = atlas.fragment({1, 1, 1, 1});
     
+    //copyTo((buffer_rw<con_wide>*)&atlas, &con);
+    copyTo(&frag, &con, {0.25, 0.25, 0.5, 0.5});
     //frag.copyTo((i_buffer_sink_dim)&con);
-    copyTo(&frag, &con);
 
     const con_wide *texts[] = {
         L"weirds: ▛▖ ▗▜ ▙ ▞▚ ",
@@ -39,10 +40,13 @@ int main() {
         L"shapes: ▰ ▱ ▲ △ ▴ ▵ ▶ ▷ ▸ ▹ ▼ ▽ ▾ ▿ ◀ ◁ ◂ ◃ ◄ ◅ ◆ ◇ ◈ ◉ ◊ ○ ◌ ◍ ◎ ● ◐ ◑ ◒ ◓ ◔ ◕ ◖ ◗ ◘ ◙ ◚ ◛ ◜ ◝ ◞ ◟ ◠ ◡ ◢ ◣ ◤ ◥ ◦ ◧ ◨ ◩ ◪ ◫ ◬ ◭ ◮ ◯"
     };
 
+    con.setCursor(0, 0);
+
     for (int i = 0; i < 4; i++) {
         con.write(texts[i]);
         con.write("\n");
     }
+
 
     while (con_key(con.readKey()).key != 'q') {
         con.write("Hello, world!\n");

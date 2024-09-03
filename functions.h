@@ -11,6 +11,15 @@ namespace cons {
         }
     }
 
+    template<typename T1, typename T2>
+    void copyTo(T1* source, T2* sink, sizef size) {
+        for (con_norm y = 0; y < size.height; y+=sink->getSampleHeightStep()) {
+            for (con_norm x = 0; x < size.width; x+=sink->getSampleWidthStep()) {
+                sink->writeSample(x + size.x, y + size.y, source->readSample(x / size.width, y / size.width));
+            }
+        }
+    }
+
     template<typename CH, typename CO, typename A>
     _cc<CH,CO,A> get_cpix(CH ch, CO co, A a) {
         _cc<CH,CO,A> pix;

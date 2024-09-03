@@ -10,8 +10,7 @@ namespace cons {
         using ib = i_buffer_rw_dim<BT>;
         buffer_rw(con_size width, con_size height) : i_buffer_rw_dim<BT>(width, height) {
             buffer = nullptr;
-            if (ib::getSize() > 0)
-                buffer = new BT[ib::getSize()];
+            make(width, height);
         }
         buffer_rw() : i_buffer_rw_dim<BT>() {
             buffer = nullptr;
@@ -116,7 +115,7 @@ namespace cons {
             for (con_size y = 0; y < buffer_pixel::height; y++) {
                 for (con_size x = 0; x < buffer_pixel::width; x++) {
                     pixel p = buffer_pixel::read(x, y);
-                    buffer_rw<con_char>::write(x, y, p.r | 127);
+                    buffer_rw<con_char>::write(x, y, p.value());
                 }
             }
         }
@@ -126,7 +125,7 @@ namespace cons {
             //buffer_rw<con_char>::free();
 
             int w, h, n;
-            
+
             unsigned char *data;
             data = stbi_load(filename, &w, &h, &n, 0);
 
@@ -139,8 +138,8 @@ namespace cons {
 
             stbi_image_free(data);
 
-            fprintf(stderr, "Loaded image %s\n", filename);
-            fprintf(stderr, "Width: %d, Height: %d, Channels: %d\n", w, h, n);
+            //fprintf(stderr, "Loaded image %s\n", filename);
+            //fprintf(stderr, "Width: %d, Height: %d, Channels: %d\n", w, h, n);
 
             if (!data)
                 return ENUMS::ERROR;
@@ -187,8 +186,8 @@ namespace cons {
 
         posf mapToAtlas(posf p) {
             posf r;
-            r.x = atlasPixelArea.x + p.x * atlasPixelArea.width;
-            r.y = atlasPixelArea.y + p.y * atlasPixelArea.height;
+            r.x = atlasPixelArea.x + (p.x * atlasPixelArea.width);
+            r.y = atlasPixelArea.y + (p.y * atlasPixelArea.height);
             r.x /= ((ib*)sourceAtlas)->getWidth();
             r.y /= ((ib*)sourceAtlas)->getHeight();
             return r;
