@@ -8,29 +8,29 @@ namespace cons {
     /*
     Read/Write memory buffer interface with dimensions
     */
-    template<typename BT>
-    struct buffer_rw : public i_buffer_rw_dim<BT> {
-        using ib = i_buffer_rw_dim<BT>;
-        buffer_rw(con_size width, con_size height) : buffer_rw() {
+    template<typename T>
+    struct buffer : public i_buffer_rw_dim<T> {
+        using ib = i_buffer_rw_dim<T>;
+        buffer(con_size width, con_size height) : buffer() {
             make(width, height);
         }
-        buffer_rw() : i_buffer_rw_dim<BT>() {
-            buffer = nullptr;
+        buffer() : i_buffer_rw_dim<T>() {
+            _buffer = nullptr;
         }
 
-        ~buffer_rw() {
+        ~buffer() {
             free();
         }
 
         size_t getBytes() {
-            return ib::getSize() * sizeof(BT);
+            return ib::getSize() * sizeof(T);
         }
 
         void free() {
-            if (buffer != nullptr) {
-                delete[] buffer;
+            if (_buffer != nullptr) {
+                delete[] _buffer;
             }
-            buffer = nullptr;
+            _buffer = nullptr;
         }
 
         virtual void make(con_size width, con_size height) {
@@ -41,80 +41,80 @@ namespace cons {
 
         virtual void make() {
             free();
-            buffer = new BT[ib::getSize()];
+            _buffer = new T[ib::getSize()];
         }
 
         void clear() override {
-            memset(buffer, 0, getBytes());  
+            memset(_buffer, 0, getBytes());  
         }
 
         void clear(con_pos width, con_pos height) override {
             clear();
         }
 
-        BT* buffer;
+        T* _buffer;
 
-        void writeSample(con_norm x, con_norm y, BT value) override {
-            buffer[ib::getSample(x, y)] = value;
+        void writeSample(con_norm x, con_norm y, T value) override {
+            _buffer[ib::getSample(x, y)] = value;
         }
 
-        void write(con_pos x, con_pos y, BT value) override {
-            buffer[ib::get(x, y)] = value;
+        void write(con_pos x, con_pos y, T value) override {
+            _buffer[ib::get(x, y)] = value;
         }
 
-        BT read(con_pos x, con_pos y) override {
-            return buffer[ib::get(x, y)];
+        T read(con_pos x, con_pos y) override {
+            return _buffer[ib::get(x, y)];
         }
 
-        BT readSample(con_norm x, con_norm y) override {
-            return buffer[ib::getSample(x, y)];
+        T readSample(con_norm x, con_norm y) override {
+            return _buffer[ib::getSample(x, y)];
         }
 
-        ssize_t write(con_pos x, con_pos y, const BT* value) override {
+        ssize_t write(con_pos x, con_pos y, const T* value) override {
             size_t pos = ib::get(x, y);
             return write(value, pos, getLength(value));
         }
 
-        ssize_t write(const BT* buf, size_t start, size_t count) override {
-            memcpy(buffer + start, buf, count);
+        ssize_t write(const T* buf, size_t start, size_t count) override {
+            memcpy(_buffer + start, buf, count);
             return count;
         }
 
-        ssize_t write(const BT* buf, size_t count) override {
+        ssize_t write(const T* buf, size_t count) override {
             return write(buf, 0, count);
         }
 
-        ssize_t write(const BT* buf) override {
+        ssize_t write(const T* buf) override {
             return write(buf, 0, getBytes());
         }
 
-        ssize_t read(BT* buf, size_t start, size_t count) override {
-            memcpy(buf, buffer + start, count);
+        ssize_t read(T* buf, size_t start, size_t count) override {
+            memcpy(buf, _buffer + start, count);
             return count;
         }
 
-        ssize_t read(BT* buf, size_t count) override {
+        ssize_t read(T* buf, size_t count) override {
             return read(buf, 0, count);
         }
 
-        void copyTo(i_buffer_sink_dim<BT>* buffer) override {
+        void copyTo(i_buffer_sink_dim<T>* buffer) override {
             cons::copyTo(this, buffer);
         }
     };
 
-    typedef buffer_rw<con_basic> buffer_basic;
-    typedef buffer_rw<con_wide> buffer_wide;
-    typedef buffer_rw<con_color> buffer_color;
-    typedef buffer_rw<pixel> buffer_pixel;
+    typedef buffer<con_basic> buffer_basic;
+    typedef buffer<con_wide> buffer_wide;
+    typedef buffer<con_color> buffer_color;
+    typedef buffer<pixel> buffer_pixel;
 
     /*
     pixel buffer + conversion buffer
     */
-    template<typename con_char>
-    struct pixel_image : public buffer_pixel, public buffer_rw<con_char> {
+    template<typename T>
+    struct pixel_image : public buffer_pixel, public buffer<T> {
         pixel_image(con_size width, con_size height) 
         :buffer_pixel(width, height),
-         buffer_rw<con_char>(width, height) {
+         buffer<T>(width, height) {
             bpp = 0;
             stbi = false;
         }
@@ -122,19 +122,19 @@ namespace cons {
 
         void make() override {
             buffer_pixel::make();
-            buffer_rw<con_char>::make();
+            buffer<T>::make();
         }
 
         void make(con_size width, con_size height) override {
             buffer_pixel::make(width, height);
-            buffer_rw<con_char>::make(width, height);
+            buffer<T>::make(width, height);
         }
 
         void compose() {
             for (con_pos y = 0; y < buffer_pixel::height; y++) {
                 for (con_pos x = 0; x < buffer_pixel::width; x++) {                    
                     pixel p = buffer_pixel::read(x, y);
-                    buffer_rw<con_char>::write(x, y, (con_char)p.value());
+                    buffer<T>::write(x, y, (T)p.value());
                 }
             }
         }
@@ -147,9 +147,9 @@ namespace cons {
 
             bpp = n;
             buffer_pixel::make(w, h);
-            buffer_rw<con_char>::make(w, h);
+            buffer<T>::make(w, h);
 
-            pixel *dest = buffer_pixel::buffer;
+            pixel *dest = buffer_pixel::_buffer;
 
             memcpy((void*)dest, data, w * h * n);
 
@@ -170,34 +170,34 @@ namespace cons {
         bool stbi;
     };
 
-    template<typename con_char>
+    template<typename T>
     struct atlas_fragment;
 
     /*
     texture atlas
     */
-    template<typename con_char>
-    struct atlas : public pixel_image<con_char> {
+    template<typename T>
+    struct atlas : public pixel_image<T> {
         int spriteSize;
-        atlas(int spriteSize):pixel_image<con_char>() {
+        atlas(int spriteSize):pixel_image<T>() {
             this->spriteSize = spriteSize;
         }
 
-        atlas_fragment<con_char> fragment(sizei sprite_units);
+        atlas_fragment<T> fragment(sizei sprite_units);
     };
 
     /*
     maps to atlas
     */
-    template<typename BT>
-    struct atlas_fragment : public i_buffer_rw_dim<BT> {
-        using ib = i_buffer_rw_dim<BT>;
+    template<typename T>
+    struct atlas_fragment : public i_buffer_rw_dim<T> {
+        using ib = i_buffer_rw_dim<T>;
         using ip = i_buffer_rw_dim<pixel>;
-        atlas<BT>* sourceAtlas;
+        atlas<T>* sourceAtlas;
         sizei atlasPixelArea;
         sizei atlasSpriteArea;
 
-        atlas_fragment():i_buffer_rw_dim<BT>() {
+        atlas_fragment():i_buffer_rw_dim<T>() {
             sourceAtlas = nullptr;
         }
 
@@ -215,59 +215,59 @@ namespace cons {
             return ((ip*)sourceAtlas)->readSample(atl.x, atl.y);
         }
 
-        BT readSample(con_norm x, con_norm y) override {
+        T readSample(con_norm x, con_norm y) override {
             posf atl = mapToAtlas(posf(x, y));
             return ((ib*)sourceAtlas)->readSample(atl.x, atl.y);
         }
 
-        void writeSample(con_norm x, con_norm y, BT value) override {
+        void writeSample(con_norm x, con_norm y, T value) override {
             posf atl = mapToAtlas(posf(x, y));
             ((ib*)sourceAtlas)->writeSample(atl.x, atl.y, value);
         }
 
-        BT read(con_size x, con_size y) override {
+        T read(con_size x, con_size y) override {
             posf atl = mapToAtlas(posf(x, y));
             return ((ib*)sourceAtlas)->read(atl.x, atl.y);
         }
 
-        void write(con_size x, con_size y, BT value) override {
+        void write(con_size x, con_size y, T value) override {
             posf atl = mapToAtlas(posf(x, y));
             ((ib*)sourceAtlas)->write(atl.x, atl.y, value);
             
         }
 
-        ssize_t write(con_pos x, con_pos y, const BT* value) override {
+        ssize_t write(con_pos x, con_pos y, const T* value) override {
             return 0;
         }
 
-        ssize_t write(const BT* buf, size_t start, size_t count) override {
+        ssize_t write(const T* buf, size_t start, size_t count) override {
             return 0;
         }
 
-        ssize_t write(const BT* buf, size_t count) override {
+        ssize_t write(const T* buf, size_t count) override {
             return 0;
         }
 
-        ssize_t write(const BT* buf) override {
+        ssize_t write(const T* buf) override {
             return 0;
         }
 
-        ssize_t read(BT* buf, size_t start, size_t count) override {
+        ssize_t read(T* buf, size_t start, size_t count) override {
             return 0;
         }
 
-        ssize_t read(BT* buf, size_t count) override {
+        ssize_t read(T* buf, size_t count) override {
             return 0;
         }
 
-        void copyTo(i_buffer_sink_dim<BT>* buffer) override {
+        void copyTo(i_buffer_sink_dim<T>* buffer) override {
             cons::copyTo(this, buffer);
         }
     };
 
-    template<typename con_char>
-    atlas_fragment<con_char> atlas<con_char>::fragment(sizei sprite_units) {
-        atlas_fragment<con_char> frag;
+    template<typename T>
+    atlas_fragment<T> atlas<T>::fragment(sizei sprite_units) {
+        atlas_fragment<T> frag;
         sizei pixel_units;
         frag.sourceAtlas = this;
 

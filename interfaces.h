@@ -85,22 +85,22 @@ namespace cons {
         }
     };
 
-    template<typename BT>
+    template<typename T>
     struct i_buffer_source;
-    template<typename BT>
+    template<typename T>
     struct i_buffer_sink;
 
     /*
     Write interface, useful with dimensions
     */
-    template<typename BT>
+    template<typename T>
     struct i_buffer_sink {
-        virtual void writeSample(con_norm x, con_norm y, BT value) = 0;
-        virtual void write(con_pos x, con_pos y, BT value) = 0;
-        virtual ssize_t write(con_pos x, con_pos y, const BT *value) = 0;
-        virtual ssize_t write(const BT* buf, size_t start, size_t count) = 0;
-        virtual ssize_t write(const BT* buf, size_t count) = 0;
-        virtual ssize_t write(const BT* buf) = 0;
+        virtual void writeSample(con_norm x, con_norm y, T value) = 0;
+        virtual void write(con_pos x, con_pos y, T value) = 0;
+        virtual ssize_t write(con_pos x, con_pos y, const T *value) = 0;
+        virtual ssize_t write(const T* buf, size_t start, size_t count) = 0;
+        virtual ssize_t write(const T* buf, size_t count) = 0;
+        virtual ssize_t write(const T* buf) = 0;
         virtual void clear(con_pos width, con_pos height) = 0;
         virtual void clear() = 0;
     };
@@ -108,19 +108,19 @@ namespace cons {
     /*
     Read interface, useful with dimensions
     */
-    template<typename BT>
+    template<typename T>
     struct i_buffer_source {
-        virtual BT readSample(con_norm x, con_norm y) = 0;
-        virtual BT read(con_pos x, con_pos y) = 0;
-        virtual ssize_t read(BT* buf, size_t start, size_t count) = 0;
-        virtual ssize_t read(BT* buf, size_t count) = 0;
+        virtual T readSample(con_norm x, con_norm y) = 0;
+        virtual T read(con_pos x, con_pos y) = 0;
+        virtual ssize_t read(T* buf, size_t start, size_t count) = 0;
+        virtual ssize_t read(T* buf, size_t count) = 0;
     };
 
     /*
     Read/Write interface, useful with dimensions
     */
-    template<typename BT>
-    struct i_buffer_rw : public i_buffer_source<BT>, public i_buffer_sink<BT>
+    template<typename T>
+    struct i_buffer_rw : public i_buffer_source<T>, public i_buffer_sink<T>
     {
         i_buffer_rw() {}
     };    
@@ -128,8 +128,8 @@ namespace cons {
     /*
     Write interface with dimensions
     */
-    template<typename BT>
-    struct i_buffer_sink_dim : public dim_prov, public i_buffer_sink<BT> {
+    template<typename T>
+    struct i_buffer_sink_dim : public dim_prov, public i_buffer_sink<T> {
         i_buffer_sink_dim(con_size width, con_size height) : dim_prov(width, height) {}
         i_buffer_sink_dim() : dim_prov() {}
     };
@@ -137,14 +137,14 @@ namespace cons {
     /*
     Read/Write interface with dimensions
     */
-    template<typename BT>
-    struct i_buffer_rw_dim : public dim_prov, public i_buffer_rw<BT> {
+    template<typename T>
+    struct i_buffer_rw_dim : public dim_prov, public i_buffer_rw<T> {
         template<typename DT>  i_buffer_rw_dim<DT>* sink() { return this; }
-        explicit operator i_buffer_rw_dim<BT>*() { return this; }
+        explicit operator i_buffer_rw_dim<T>*() { return this; }
         i_buffer_rw_dim(con_size width, con_size height) : dim_prov(width, height) {}
         i_buffer_rw_dim() : dim_prov() {}
 
-        virtual void copyTo(i_buffer_sink_dim<BT>* buffer) = 0;
+        virtual void copyTo(i_buffer_sink_dim<T>* buffer) = 0;
         void clear() override {}
         void clear(con_pos x, con_pos y) override {}
     };
