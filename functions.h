@@ -33,4 +33,21 @@ namespace cons {
     _2d<P> length(T<P> buffer) {
         return _2d<P>(buffer.width, buffer.height);
     }
+
+    size_t getLength(const con_wide *str) {
+        return wcslen(str);
+    }
+
+    size_t getLength(const con_basic *str) {
+        return strlen(str);
+    }
+
+    template<typename T>
+    size_t getLength(const T *str) {
+        int i = 0;
+        while (*(char*)(str + i) != 0) {
+            i++;
+        }
+        return i;
+    }
 };

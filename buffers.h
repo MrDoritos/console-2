@@ -8,8 +8,7 @@ namespace cons {
     template<typename BT>
     struct buffer_rw : public i_buffer_rw_dim<BT> {
         using ib = i_buffer_rw_dim<BT>;
-        buffer_rw(con_size width, con_size height) : i_buffer_rw_dim<BT>(width, height) {
-            buffer = nullptr;
+        buffer_rw(con_size width, con_size height) : buffer_rw() {
             make(width, height);
         }
         buffer_rw() : i_buffer_rw_dim<BT>() {
@@ -20,26 +19,30 @@ namespace cons {
             free();
         }
 
+        size_t getBytes() {
+            return ib::getSize() * sizeof(BT);
+        }
+
         void free() {
             if (buffer != nullptr) {
                 delete[] buffer;
-                buffer = nullptr;
             }
+            buffer = nullptr;
         }
 
-        void make(con_size width, con_size height) {
+        virtual void make(con_size width, con_size height) {
             this->width = width;
             this->height = height;
             make();
         }
 
-        void make() {
+        virtual void make() {
             free();
             buffer = new BT[ib::getSize()];
         }
 
         void clear() override {
-            memset(buffer, 0, ib::getSize());  
+            memset(buffer, 0, getBytes());  
         }
 
         void clear(con_pos width, con_pos height) override {
@@ -65,27 +68,30 @@ namespace cons {
         }
 
         ssize_t write(con_pos x, con_pos y, const BT* value) override {
-            return 0;
+            size_t pos = ib::get(x, y);
+            return write(value, pos, getLength(value));
         }
 
         ssize_t write(const BT* buf, size_t start, size_t count) override {
-            return 0;
+            memcpy(buffer + start, buf, count);
+            return count;
         }
 
         ssize_t write(const BT* buf, size_t count) override {
-            return 0;
+            return write(buf, 0, count);
         }
 
         ssize_t write(const BT* buf) override {
-            return 0;
+            return write(buf, 0, getBytes());
         }
 
         ssize_t read(BT* buf, size_t start, size_t count) override {
-            return 0;
+            memcpy(buf, buffer + start, count);
+            return count;
         }
 
         ssize_t read(BT* buf, size_t count) override {
-            return 0;
+            return read(buf, 0, count);
         }
 
         void copyTo(i_buffer_sink_dim<BT>* buffer) override {
@@ -106,29 +112,34 @@ namespace cons {
             bpp = 0;
             stbi = false;
         }
-        pixel_image() {
-            bpp = 0;
-            stbi = false;
+        pixel_image():pixel_image(0, 0) {}
+
+        void make() override {
+            buffer_pixel::make();
+            buffer_rw<con_char>::make();
+        }
+
+        void make(con_size width, con_size height) override {
+            buffer_pixel::make(width, height);
+            buffer_rw<con_char>::make(width, height);
         }
 
         void compose() {
-            for (con_size y = 0; y < buffer_pixel::height; y++) {
-                for (con_size x = 0; x < buffer_pixel::width; x++) {
+            for (con_pos y = 0; y < buffer_pixel::height; y++) {
+                for (con_pos x = 0; x < buffer_pixel::width; x++) {                    
                     pixel p = buffer_pixel::read(x, y);
-                    buffer_rw<con_char>::write(x, y, p.value());
+                    buffer_rw<con_char>::write(x, y, (con_char)p.value());
                 }
             }
         }
 
         int load(const char* filename) {
-            //buffer_pixel::free();
-            //buffer_rw<con_char>::free();
-
             int w, h, n;
 
             unsigned char *data;
             data = stbi_load(filename, &w, &h, &n, 0);
 
+            bpp = n;
             buffer_pixel::make(w, h);
             buffer_rw<con_char>::make(w, h);
 
@@ -138,16 +149,10 @@ namespace cons {
 
             stbi_image_free(data);
 
-            //fprintf(stderr, "Loaded image %s\n", filename);
-            //fprintf(stderr, "Width: %d, Height: %d, Channels: %d\n", w, h, n);
-
             if (!data)
                 return ENUMS::ERROR;
 
-            bpp = n;
             stbi = true;
-
-            //buffer_pixel::make(w, h);
 
             compose();
 

@@ -6,7 +6,11 @@
 #include "interfaces.h"
 
 namespace cons {
-    struct console_ncurses : public i_console_basic {
+    template<typename ascii_dt, typename unicode_dt>
+    struct console_ncurses : public i_console_basic<ascii_dt, unicode_dt> {
+        using ic = i_console_basic<ascii_dt, unicode_dt>;
+        //using ic_a = (i_console_sink<ascii_dt>*)ic;
+        //using ic_u = (i_console_sink<unicode_dt>*)ic;
 
         winsize w;
         WINDOW* win;
@@ -18,10 +22,10 @@ namespace cons {
         virtual void refreshSize() {
             ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
         }
-        virtual bool isReady() { return ready; }
-        virtual con_size getWidth() { refreshSize(); return w.ws_col; }
-        virtual con_size getHeight() { refreshSize(); return w.ws_row; }
-        virtual err_ret open() {
+        bool isReady() override { return ready; }
+        con_size getWidth() override { refreshSize(); return w.ws_col; }
+        con_size getHeight() override { refreshSize(); return w.ws_row; }
+        err_ret open() override {
             win = initscr();
             //scr = newterm(getenv("TERM"), stdout, stdin);
             //set_term(scr);
@@ -29,8 +33,8 @@ namespace cons {
             scr = nullptr;
             setlocale(LC_ALL, "");
 
-            setWidth(getWidth());
-            setHeight(getHeight());
+            ic::setWidth(ic::getWidth());
+            ic::setHeight(ic::getHeight());
 
             curs_set_sp(getScreen(), 0);
             set_escdelay_sp(getScreen(), 0);
@@ -47,7 +51,7 @@ namespace cons {
             ready = true;
             return ENUMS::NO_ERROR;
         }
-        virtual err_ret close() {
+        err_ret close() override {
             //endwin_sp(getScreen());
             //set_term(nullptr);
             //delscreen(getScreen());
@@ -55,45 +59,40 @@ namespace cons {
             ready = false;
             return ENUMS::NO_ERROR;
         }
-        virtual void setCursor(con_pos x, con_pos y) {
+        void setCursor(con_pos x, con_pos y) override {
             //move(y, x);
             wmove(getWindow(), y, x);
         }
-        virtual con_pos getCursorX() { return getcurx(stdscr); }
-        virtual con_pos getCursorY() { return getcury(stdscr); }
+        con_pos getCursorX() override { return getcurx(stdscr); }
+        con_pos getCursorY() override { return getcury(stdscr); }
 
 
 
-        ssize_t write(const con_basic* buf, size_t count) override {
+        ssize_t write(const con_basic* buf, size_t start, size_t count) override {
             waddnstr(getWindow(), buf, count);
             this->refreshCon();
             return count;
         }
-        ssize_t write(const con_basic* text) {
-            return i_console_basic_write::write(text);
-        }
-        ssize_t write(const con_wide* buf, size_t count) override {
+        
+        ssize_t write(const con_wide* buf, size_t start, size_t count) override {
             waddnwstr(getWindow(), buf, count);
             this->refreshCon();
             return count;
         }
-        ssize_t write(const con_wide* text) {
-            return i_console_basic::write(text);
-        }
 
 
 
-        virtual con_type getType() { return con_type{"ncursesw"}; }
+        con_type getType() override { return con_type{"ncursesw"}; }
         virtual con_basic_key getKey() {
             return wgetch(getWindow());
         }
-        virtual con_basic_key readKey() { timeout(-1); return getKey(); }
-        virtual con_basic_key readKeyAsync() { 
+        con_basic_key readKey() override { timeout(-1); return getKey(); }
+        con_basic_key readKeyAsync() override { 
             timeout(0);
             con_basic_key key = getKey();
             return key == -1 ? 0 : key;
         }
-        virtual void clear() { 
+        void clear() override { 
             wclear(getWindow());
             refreshCon();
         }
@@ -105,13 +104,13 @@ namespace cons {
         }
     };
 
-    template<typename CON_NCURSES>
-    struct console_ncurses_color : public CON_NCURSES, public i_color {
-        virtual void setColor(con_color color) {
+    template<typename con_base>
+    struct console_ncurses_color : public con_base, public i_color {
+        void setColor(con_color color) override {
             attron(COLOR_PAIR(color));
         }
-        virtual err_ret open() {
-            err_ret ret = CON_NCURSES::open();
+        err_ret open() override {
+            err_ret ret = con_base::open();
             if (ret != ENUMS::NO_ERROR) 
                 return ret | ENUMS::ERROR;
             start_color();
@@ -137,25 +136,25 @@ namespace cons {
         template<typename T>
         void write(T text, con_color color = 1) {
             setColor(2);
-            CON_NCURSES::write(text);
+            con_base::write(text, 0, getLength(text));
         }
 
         template<typename T>
         void write(con_pos x, con_pos y, T text, con_color color = 1) {
             setColor(3);
-            CON_NCURSES::write(x, y, text);
+            con_base::write(x, y, text);
         }
 
         template<typename T>
         void write(con_pos x, con_pos y, T text, const con_color *color) {
-            CON_NCURSES::setCursor(x,y);
-            for (size_t i = 0; i < wcslen(text); i++) {
+            con_base::setCursor(x,y);
+            for (size_t i = 0; i < getLength(text); i++) {
                 setColor(color[i]);
-                CON_NCURSES::write(text[i], 1);
+                con_base::write(text[i], 0, 1);
             }
         }    
     };
 
-    typedef console_ncurses console;
+    typedef console_ncurses<con_basic,con_wide> console;
     typedef console_ncurses_color<console> console_color;
 }

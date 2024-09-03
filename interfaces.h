@@ -149,39 +149,21 @@ namespace cons {
         virtual err_ret close() = 0;
     };
 
-    struct i_console_basic_write :
-    public i_cursor_set,
-    //public i_dimension,
-    //public i_write_seek,
-    public dim_prov,
-    public i_other,
-    public i_state,
-    //public unbuffered_base<con_basic> 
-    public i_buffer_sink<con_basic> {
-        virtual con_type getType() = 0;
-
-        ssize_t write(con_pos x, con_pos y, const con_basic* text) override {
-            setCursor(x, y);
-            return write(text, strlen(text));
+    template<typename T>
+    struct i_console_sink : public i_buffer_sink<T> {
+        /*
+        ssize_t write(const T* text) override {
+            return this->write(text, getLength(text));
         }
-        void write(con_pos x, con_pos y, con_basic ch) override {
-            //#include <stdio.h>
-            //fprintf(stderr, "write(%i, %i, con_basic %c)\n", x, y, ch);
-            setCursor(x, y);
-            write(&ch, 1);
+        ssize_t write(const T* buf, size_t count) override {
+            return this->write(buf, 0, count);
         }
-        void writeSample(con_norm x, con_norm y, con_basic ch) override {
-            write(getWidth(x), getHeight(y), ch);
-        }
-        ssize_t write(const con_basic* text) override {
-            return write(text, strlen(text));
-        }
-        ssize_t write(const con_basic* buf, size_t count) override {
+        */
+        /* Inherit pure from i_buffer_sink
+        ssize_t write(const T* buf, size_t start, size_t count) override {
             return 0;
         }
-        ssize_t write(const con_basic* buf, size_t start, size_t count) override {
-            return 0;
-        }
+        */
         void clear(con_pos width, con_pos height) override {
             
         }
@@ -190,39 +172,65 @@ namespace cons {
         }
     };
 
-    struct i_console_basic : 
-    public i_console_basic_write,
-    //public i_write_wide,
+    template<typename ascii_dt>
+    struct i_console_basic_ascii :
+    public dim_prov,
+    public i_cursor_set,
     public i_keyboard,
-    //public unbuffered_base<con_wide>
-    public i_buffer_sink<con_wide> {
-        ssize_t write(con_pos x, con_pos y, const con_wide* text) override {
-            setCursor(x, y);
-            return write(text, wcslen(text));
-        }
-        void write(con_pos x, con_pos y, con_wide ch) override {
-            //#include <stdio.h>
-            //fprintf(stderr, "write(%i, %i, con_wide %c)\n", x, y, ch);
-            setCursor(x, y);
-            write(&ch, 1);
-        }
-        void writeSample(con_norm x, con_norm y, con_wide ch) override {
-            write(getWidth(x), getHeight(y), ch);
-        }
-        ssize_t write(const con_wide* text) override {
-            return write(text, wcslen(text));
-        }
-        ssize_t write(const con_wide* text, size_t count) override {
-            return 0;
-        }
-        ssize_t write(const con_wide* buf, size_t start, size_t count) override {
-            return 0;
-        }
-        void clear(con_pos width, con_pos height) override {
-            
-        }
-        void clear() override {
+    public i_other,
+    public i_state,
+    public i_console_sink<ascii_dt> {
+        virtual con_type getType() = 0;
 
+        ssize_t write(con_pos x, con_pos y, const ascii_dt* text) override {
+            this->setCursor(x, y);
+            return this->write(text, getLength(text));
+        }
+        void write(con_pos x, con_pos y, ascii_dt ch) override {
+            this->setCursor(x, y);
+            this->write(&ch, sizeof(ch));
+        }
+        void writeSample(con_norm x, con_norm y, ascii_dt ch) override {
+            this->write(this->getWidth(x), this->getHeight(y), ch);
+        }
+
+
+        ssize_t write(const ascii_dt* text) override {
+            return this->write(text, getLength(text));
+        }
+        ssize_t write(const ascii_dt* buf, size_t count) override {
+            return this->write(buf, 0, count);
+        }
+        ssize_t write(const ascii_dt* buf, size_t start, size_t count) override {
+            return 0;
+        }
+    };
+
+    template<typename ascii_dt, typename unicode_dt>
+    struct i_console_basic : 
+    public i_console_basic_ascii<ascii_dt>,
+    public i_console_sink<unicode_dt> {
+        ssize_t write(con_pos x, con_pos y, const unicode_dt* text) override {
+            this->setCursor(x, y);
+            return this->write(text, getLength(text));
+        }
+        void write(con_pos x, con_pos y, unicode_dt ch) override {
+            this->setCursor(x, y);
+            this->write(&ch, sizeof(ch));
+        }
+        void writeSample(con_norm x, con_norm y, unicode_dt ch) override {
+            this->write(this->getWidth(x), this->getHeight(y), ch);
+        }
+
+
+        ssize_t write(const unicode_dt* text) override {
+            return this->write(text, getLength(text));
+        }
+        ssize_t write(const unicode_dt* buf, size_t count) override {
+            return this->write(buf, 0, count);
+        }
+        ssize_t write(const unicode_dt* buf, size_t start, size_t count) override {
+            return 0;
         }
     };
 
