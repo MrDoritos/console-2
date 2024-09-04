@@ -15,12 +15,14 @@ using namespace cons;
 int main() {
     console_ncurses_color<console_ncurses<con_basic, con_wide>> con;
 
+    using cpix_sink = sink_wcpix;
+
     con.open();
 
     con.write("Hello, world!\n");
 
-    using at = atlas<cpix_wide>;
-    using atf = atlas_fragment<cpix_wide>;
+    using at = atlas<cpix_sink::value_type>;
+    using atf = atlas_fragment<cpix_sink::value_type>;
 
     at atlas(8);
 
@@ -32,7 +34,7 @@ int main() {
         
     atf frag = atlas.fragment({1, 1, 1, 1});
     
-    copyTo(frag.sink(), con.sink_wcpix::sink(), {0.25, 0.25, 0.5, 0.5});
+    copyTo(frag.sink(), con.cpix_sink::sink(), {0.25, 0.25, 0.5, 0.5});
     //copyTo(frag.sink<con_wide>(), con.unicode::sink<con_wide>());
     //copyTo(&frag, con.sink<con_wide>());
     //copyTo(frag.sink<converter<con_wide>>(), con.sink<converter<con_wide>>());

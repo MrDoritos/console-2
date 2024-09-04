@@ -96,6 +96,7 @@ namespace cons {
     */
     template<typename T>
     struct i_buffer_sink {
+        typedef T value_type;
         virtual void writeSample(con_norm x, con_norm y, T value) = 0;
         virtual void write(con_pos x, con_pos y, T value) = 0;
         virtual ssize_t write(con_pos x, con_pos y, const T *value) = 0;
@@ -112,6 +113,7 @@ namespace cons {
     */
     template<typename T>
     struct i_buffer_source {
+        typedef T value_type;
         virtual T readSample(con_norm x, con_norm y) = 0;
         virtual T read(con_pos x, con_pos y) = 0;
         virtual ssize_t read(T* buf, size_t start, size_t count) = 0;
