@@ -34,17 +34,6 @@ namespace cons {
         const con_basic *name;
     };
 
-    template<typename character, typename color, typename alpha>
-    struct _cc {
-        character ch;
-        color co;
-        alpha a;
-    };
-
-    typedef _cc<con_basic, con_color, con_color> cpix_basic;
-    typedef _cc<con_wide, con_color, con_color> cpix_wide;
-    template<typename Tchar>
-    using cpix_Tchar = _cc<Tchar, con_color, con_color>;
 
     template<typename _bit>
     struct _pixel {
@@ -56,11 +45,36 @@ namespace cons {
         :r(r), g(g), b(b), a(a) {}
         _bit r,g,b,a;
         _bit value() {
-            return (int(r) + g + b) / _bit(3);
+            return ((int(r) + g + b) / 3);
         }
     };
 
     typedef _pixel<con_ubyte> pixel;
+
+    template<typename T>
+    T getCharacter(pixel color) {
+        float value = color.value() / 255.0f;
+        float a = color.a / 255.0f;
+        if (a < 0.1f) return ' ';
+        value *= a;
+        const char values[] = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'.";
+        return values[int(value * strlen(&values[0]))];
+    }
+
+    template<typename character, typename color, typename alpha>
+    struct _cc {
+        _cc() : ch(0), co(0), a(255) {}
+        _cc(pixel pix) : _cc(pix,getCharacter<character>(pix)) {}
+        _cc(pixel pix, character ch) : ch(ch), co(pix.value()), a(pix.a) {}
+        character ch;
+        color co;
+        alpha a;
+    };
+
+    typedef _cc<con_basic, con_color, con_color> cpix_basic;
+    typedef _cc<con_wide, con_color, con_color> cpix_wide;
+    template<typename Tchar>
+    using cpix_Tchar = _cc<Tchar, con_color, con_color>;
 
     template<typename T>
     struct _2d {

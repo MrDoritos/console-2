@@ -86,14 +86,20 @@ namespace cons {
     template<typename Tchar>
     struct ncurses_cpix_sink : 
     public i_console_sink<cpix_Tchar<Tchar>>, 
-    public virtual i_ncurses_func {
+    public virtual i_ncurses_func,
+    public virtual i_color {
         using Tcc = cpix_Tchar<Tchar>;
         ssize_t write(const Tcc* buf, size_t start, size_t count) override {
-            waddnstr(this->getWindow(), buf->ch, count);
+            for (size_t i = 0; i < count; i++) {
+                //setColor(buf[i].co & 0x0F);
+                waddch(this->getWindow(), buf[i].ch);
+            }
             this->refreshCon();
             return count;
         }
     };
+
+    typedef ncurses_cpix_sink<con_wide> ncurses_cpix_sink_wide;
 
     struct ncurses_char_sink : 
     public i_console_sink<con_basic>, 
@@ -117,7 +123,10 @@ namespace cons {
     public ncurses_char_sink { };
 
     template<typename con_base>
-    struct console_ncurses_color : public con_base, public i_color {
+    struct console_ncurses_color : 
+    public con_base,
+    public ncurses_cpix_sink_wide,
+    public virtual i_color {
         void setColor(con_color color) override {
             attron(COLOR_PAIR(color));
         }

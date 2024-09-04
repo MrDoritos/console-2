@@ -19,8 +19,8 @@ int main() {
 
     con.write("Hello, world!\n");
 
-    using at = atlas<con_wide>;
-    using atf = atlas_fragment<con_wide>;
+    using at = atlas<cpix_wide>;
+    using atf = atlas_fragment<cpix_wide>;
 
     at atlas(8);
 
@@ -32,7 +32,7 @@ int main() {
         
     atf frag = atlas.fragment({1, 1, 1, 1});
     
-    copyTo(frag.sink(), con.sink_wide::sink(), {0.25, 0.25, 0.5, 0.5});
+    copyTo(frag.sink(), con.sink_wcpix::sink(), {0.25, 0.25, 0.5, 0.5});
     //copyTo(frag.sink<con_wide>(), con.unicode::sink<con_wide>());
     //copyTo(&frag, con.sink<con_wide>());
     //copyTo(frag.sink<converter<con_wide>>(), con.sink<converter<con_wide>>());

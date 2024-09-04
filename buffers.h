@@ -131,12 +131,7 @@ namespace cons {
         }
 
         void compose() {
-            for (con_pos y = 0; y < buffer_pixel::height; y++) {
-                for (con_pos x = 0; x < buffer_pixel::width; x++) {                    
-                    pixel p = buffer_pixel::read(x, y);
-                    buffer<T>::write(x, y, (T)p.value());
-                }
-            }
+            cons::copyTo(buffer_pixel::sink(), buffer<T>::sink());
         }
 
         int load(const char* filename) {

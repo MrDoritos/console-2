@@ -5,6 +5,17 @@
 namespace cons {
     const sizef sample = {0,0,1,1};
 
+    //template<template<typename> typename T1, template<typename> typename T2,typename DT>
+    //void copyTo(T1<DT>* source, T2<DT>* sink) {
+    template<typename T1, typename T2>
+    void copyTo(T1* source, T2* sink) {
+        for (con_norm y = 0.0; y < sink->getSampleHeight(); y+=sink->getSampleHeightStep()) {
+            for (con_norm x = 0.0; x < sink->getSampleWidth(); x+=sink->getSampleWidthStep()) {
+                sink->writeSample(x, y, source->readSample(x, y));
+            }
+        }
+    }
+
     /*
     Will be used for fast copying (that's why it's separate from sampleTo)
     */

@@ -58,10 +58,10 @@ namespace cons {
             return v / con_norm(getHeight());
         }
         con_norm getSampleWidthStep() override {
-            return 1.0f / con_norm(getWidth());
+            return getSampleWidth() / con_norm(getWidth());
         }
         con_norm getSampleHeightStep() override {
-            return 1.0f / con_norm(getHeight());
+            return getSampleHeight() / con_norm(getHeight());
         }
         con_size getWidth() override {
             return width;
@@ -79,10 +79,10 @@ namespace cons {
             return getWidth() * getHeight();
         } 
         con_norm getSampleWidth() override {
-            return 1.0f;
+            return 1.000001f;
         }
         con_norm getSampleHeight() override {
-            return 1.0f;
+            return 1.000001f;
         }
     };
 
@@ -127,17 +127,6 @@ namespace cons {
         i_buffer_rw() {}
     };    
 
-    template<typename T, typename DT>
-        concept SameType = requires(DT d, T t) {
-            t = d;
-            typename DT::value_type;
-            { d } -> std::convertible_to<T>;
-            requires std::same_as<T*, decltype(&d)>;
-        };
-    
-    template<typename T, typename DT>
-        concept SameType2 = std::is_same<T, DT>::value;
-        
     /*
     Write interface with dimensions
     */
@@ -157,6 +146,8 @@ namespace cons {
 
     typedef i_buffer_sink_dim<con_wide> sink_wide;
     typedef i_buffer_sink_dim<con_basic> sink_basic;
+    typedef i_buffer_sink_dim<cpix_basic> sink_cpix;
+    typedef i_buffer_sink_dim<cpix_wide> sink_wcpix;
 
 
     /*
@@ -223,7 +214,7 @@ namespace cons {
         }
         void write(con_pos x, con_pos y, T ch) override {
             this->setCursor(x, y);
-            this->write(&ch, sizeof(ch));
+            this->write(&ch, 1);
         }
         void writeSample(con_norm x, con_norm y, T ch) override {
             this->write(this->getWidth(x), this->getHeight(y), ch);
