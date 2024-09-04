@@ -32,7 +32,7 @@ int main() {
         
     atf frag = atlas.fragment({1, 1, 1, 1});
     
-    copyTo(frag.sink<con_wide>(), con.sink<con_wide>(), {0.25, 0.25, 0.5, 0.5});
+    copyTo(frag.sink(), con.sink_wide::sink(), {0.25, 0.25, 0.5, 0.5});
     //copyTo(frag.sink<con_wide>(), con.unicode::sink<con_wide>());
     //copyTo(&frag, con.sink<con_wide>());
     //copyTo(frag.sink<converter<con_wide>>(), con.sink<converter<con_wide>>());

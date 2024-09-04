@@ -2,6 +2,7 @@
 #include "defines.h"
 #include "functions.h"
 #include <cassert>
+#include <concepts>
 
 namespace cons {
     /*
@@ -103,6 +104,7 @@ namespace cons {
         virtual ssize_t write(const T* buf) = 0;
         virtual void clear(con_pos width, con_pos height) = 0;
         virtual void clear() = 0;
+        i_buffer_sink<T> *sink();
     };
     
     /*
@@ -125,22 +127,45 @@ namespace cons {
         i_buffer_rw() {}
     };    
 
+    template<typename T, typename DT>
+        concept SameType = requires(DT d, T t) {
+            t = d;
+            typename DT::value_type;
+            { d } -> std::convertible_to<T>;
+            requires std::same_as<T*, decltype(&d)>;
+        };
+    
+    template<typename T, typename DT>
+        concept SameType2 = std::is_same<T, DT>::value;
+        
     /*
     Write interface with dimensions
     */
     template<typename T>
-    struct i_buffer_sink_dim : public dim_prov, public i_buffer_sink<T> {
+    struct i_buffer_sink_dim : public virtual dim_prov, public i_buffer_sink<T> {
         i_buffer_sink_dim(con_size width, con_size height) : dim_prov(width, height) {}
         i_buffer_sink_dim() : dim_prov() {}
+        
+        i_buffer_sink_dim<T> *sink();
     };
+
+    //template<typename T, typename DT, std::enable_if_t<std::is_same_v<T, DT>, int> = 0>
+    template<typename T>
+    i_buffer_sink_dim<T> *i_buffer_sink_dim<T>::sink() {
+        return this;
+    }
+
+    typedef i_buffer_sink_dim<con_wide> sink_wide;
+    typedef i_buffer_sink_dim<con_basic> sink_basic;
+
 
     /*
     Read/Write interface with dimensions
     */
     template<typename T>
-    struct i_buffer_rw_dim : public dim_prov, public i_buffer_rw<T> {
+    struct i_buffer_rw_dim : public virtual dim_prov, public i_buffer_rw<T> {
         template<typename DT>  i_buffer_rw_dim<DT>* sink() { return this; }
-        explicit operator i_buffer_rw_dim<T>*() { return this; }
+        virtual i_buffer_rw_dim<T>* sink() { return this; }
         i_buffer_rw_dim(con_size width, con_size height) : dim_prov(width, height) {}
         i_buffer_rw_dim() : dim_prov() {}
 
@@ -148,6 +173,9 @@ namespace cons {
         void clear() override {}
         void clear(con_pos x, con_pos y) override {}
     };
+
+    typedef i_buffer_rw_dim<con_wide> rw_wide;
+    typedef i_buffer_rw_dim<con_basic> rw_basic;
 
     struct i_keyboard {
         virtual con_basic_key readKey() = 0;
@@ -169,6 +197,8 @@ namespace cons {
 
     struct i_other {
         virtual void sleep(int millis) = 0;
+        virtual con_type getType() = 0;
+        virtual void clear() = 0;
     };
 
     struct i_state {
@@ -183,11 +213,10 @@ namespace cons {
     */
     template<typename T>
     struct i_console_sink : 
-    public i_buffer_sink<T>,
-    public virtual i_cursor_set,
-    public virtual dim_prov {
-        template<typename DT>  i_console_sink<DT>* sink() { return this; }
-
+    public i_buffer_sink_dim<T>,
+    public virtual i_cursor_set {
+        //using our_sink = i_buffer_sink_dim<T>;
+        //using our_sink::sink;
         ssize_t write(con_pos x, con_pos y, const T* text) override {
             this->setCursor(x, y);
             return this->write(text, getLength(text));
@@ -213,19 +242,23 @@ namespace cons {
         void clear() override { }
     };
 
+    struct i_console :
+    public virtual i_keyboard,
+    public virtual i_other,
+    public virtual i_state,
+    public virtual i_cursor_set,
+    public virtual dim_prov { };
+
     /*
     Ascii only console container
     Write interface with dimensions
     */
     template<typename ascii_dt>
     struct i_console_basic_ascii :
-    public i_keyboard,
-    public i_other,
-    public i_state,
+    public i_console,
     public i_console_sink<ascii_dt> {
         using ascii = i_console_sink<ascii_dt>;
-        using ascii::sink;
-        virtual con_type getType() = 0;
+        //using ascii::sink;
         ascii *getAscii() { return this; }
     };
 
@@ -238,7 +271,7 @@ namespace cons {
     public i_console_basic_ascii<ascii_dt>,
     public i_console_sink<unicode_dt> {
         using unicode = i_console_sink<unicode_dt>;
-        using unicode::sink;
+        //using unicode::sink;
         unicode *getUnicode() { return this; }
     };
 }

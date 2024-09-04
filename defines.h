@@ -43,6 +43,8 @@ namespace cons {
 
     typedef _cc<con_basic, con_color, con_color> cpix_basic;
     typedef _cc<con_wide, con_color, con_color> cpix_wide;
+    template<typename Tchar>
+    using cpix_Tchar = _cc<Tchar, con_color, con_color>;
 
     template<typename _bit>
     struct _pixel {
