@@ -13,7 +13,7 @@
 using namespace cons;
 
 int main() {
-    console_ncurses_color<console_ncurses<con_basic, con_wide>> con;
+    console_ncurses_mouse<console_ncurses_color<console_ncurses<con_basic, con_wide>>> con;
 
     using cpix_sink = sink_wcpix;
 
@@ -54,8 +54,10 @@ int main() {
     }
 
 
-    while (con_key(con.readKey()).key != 'q') {
+    while (con_key(con.readKeyAsync()).key != 'q') {
         con.write("Hello, world!\n");
+        con_mouse m = con.readMouse();
+        fprintf(stderr, "Mouse: %d %d %d %d %d\n", m.x, m.y, m.z, m.state, m.id);
     }
 
     con.close();

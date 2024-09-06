@@ -30,6 +30,29 @@ namespace cons {
         };
     };
 
+    struct con_mouse {
+        con_mouse() : x(0), y(0), z(0), state(0), id(0) {}
+        con_pos x, y, z;
+        int state;
+        int id;
+
+        enum MOUSE {
+            BUTTON1 = 0b1,
+            BUTTON2 = 0b10,
+            BUTTON3 = 0b100,
+            BUTTON4 = 0b1000,
+            BUTTON5 = 0b10000,
+            PRESSED = 0b100000,
+            RELEASED= 0b1000000,
+            CLICKED = 0b10000000,
+            DOUBLE_CLICKED = 0b100000000,
+            TRIPLE_CLICKED = 0b1000000000,
+            CTRL = 0b10000000000,
+            SHIFT = 0b100000000000,
+            ALT = 0b1000000000000,
+        };
+    };
+
     struct con_type {
         const con_basic *name;
     };

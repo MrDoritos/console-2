@@ -90,7 +90,8 @@ namespace cons {
     template<typename T>
     size_t getLength(const T *str) {
         int i = 0;
-        while (*(char*)(str + i) != 0) {
+        int skip = sizeof(T);
+        while (*(char*)(i * skip + str) != 0) {
             i++;
         }
         return i;

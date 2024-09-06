@@ -3,6 +3,7 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <iostream>
+#include <queue>
 #include "interfaces.h"
 
 namespace cons {
@@ -174,6 +175,60 @@ namespace cons {
                 con_base::write(text[i], 0, 1);
             }
         }    
+    };
+
+    template<typename con_base>
+    struct console_ncurses_mouse :
+    public con_base,
+    public virtual i_mouse {
+        err_ret open() override {
+            err_ret ret = con_base::open();
+            if (ret != ENUMS::NO_ERROR) 
+                return ret | ENUMS::ERROR;
+            mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, nullptr);
+            return ENUMS::NO_ERROR;
+        }
+        con_basic_key getKey() override {
+            return wgetch(con_base::getWindow());
+        }
+
+        template<typename FUNC>
+        con_mouse getMouse(FUNC func) {
+            MEVENT event;
+            con_mouse mouse;
+            con_basic_key key;
+            bool has_mouse = false;
+
+            for (int i = 0; i < 2; i++) {
+                if (getmouse(&event) != OK) {
+                    key = func();
+                    if (key != KEY_MOUSE) {
+                        ungetch(key);
+                    }
+                } else {
+                    has_mouse = true;
+                    break;
+                }
+            }
+
+            if (!has_mouse) {
+                return mouse;
+            }
+
+            mouse.x = event.x;
+            mouse.y = event.y;
+            mouse.z = event.z;
+            mouse.state = event.bstate;
+            mouse.id = event.id;
+            return mouse;
+        }
+
+        con_mouse readMouse() override {
+            return getMouse([this] () { return this->readKey(); });
+        }
+        con_mouse readMouseAsync() override {
+            return getMouse([this] () { return this->readKeyAsync(); });
+        }
     };
 
     typedef console_ncurses<con_basic,con_wide> console;

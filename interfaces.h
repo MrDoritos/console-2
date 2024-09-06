@@ -175,6 +175,11 @@ namespace cons {
         virtual con_basic_key readKeyAsync() = 0;
     };
 
+    struct i_mouse {
+        virtual con_mouse readMouse() = 0;
+        virtual con_mouse readMouseAsync() = 0;
+    };
+
     struct i_cursor {
         virtual con_pos getCursorX() = 0;
         virtual con_pos getCursorY() = 0;
