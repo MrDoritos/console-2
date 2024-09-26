@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstring>
+#include <cmath>
+
 namespace cons {
     typedef int con_pos;
     typedef int con_size;
@@ -60,8 +63,10 @@ namespace cons {
 
     template<typename _bit>
     struct _pixel {
+        typedef _bit value_type;
         _pixel()
         :r(0), g(0), b(0), a(255) {}
+        _pixel(int dummy) : _pixel() {}
         _pixel(_bit r, _bit g, _bit b)
         :_pixel(r, g, b, 255) {}
         _pixel(_bit r, _bit g, _bit b, _bit a)
@@ -70,18 +75,27 @@ namespace cons {
         _bit value() {
             return ((int(r) + g + b) / 3);
         }
+        _bit luminance() {
+            return ((r * 0.299) +
+                    (g * 0.587) +
+                    (b * 0.114));
+        }
     };
 
     typedef _pixel<con_ubyte> pixel;
 
     template<typename T>
     T getCharacter(pixel color) {
-        float value = color.value() / 255.0f;
+        const char* values = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'.";
+
+        //float value = color.value() / 255.0f;
+        float value = 1-(color.luminance() / 255.0f);
         float a = color.a / 255.0f;
-        if (a < 0.1f) return ' ';
+
+        if (a < 0.1f) return (T)' ';
         value *= a;
-        const char values[] = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'.";
-        return values[int(value * strlen(&values[0]))];
+
+        return (T)values[int(value * strlen(values))];
     }
 
     template<typename character, typename color, typename alpha>
@@ -89,6 +103,8 @@ namespace cons {
         _cc() : ch(0), co(0), a(255) {}
         _cc(pixel pix) : _cc(pix,getCharacter<character>(pix)) {}
         _cc(pixel pix, character ch) : ch(ch), co(pix.value()), a(pix.a) {}
+        _cc(character ch, color co, alpha a) : ch(ch), co(co), a(a) {}
+        _cc(character ch) : ch(ch), co(0), a(255) {}
         character ch;
         color co;
         alpha a;
@@ -104,6 +120,9 @@ namespace cons {
         T x, y;
         _2d(T x, T y) : x(x), y(y) {}
         _2d() : x(0), y(0) {}
+        T distance(_2d<T> other) {
+            return sqrt((x - other.x) * (x - other.x) + (y - other.y) * (y - other.y));
+        }
     };
 
     template<typename T>

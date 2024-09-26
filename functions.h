@@ -25,11 +25,12 @@ namespace cons {
     //void copyTo(T1* source, T2* sink, sizef size) {
         if (source->getWidth() == sink->getWidth() && source->getHeight() == sink->getHeight()) {
             int width = sink->getWidth();
-            DT buffer[width];
+            size_t size = sizeof(DT);
+            DT *buffer = (DT*)alloca(width * size);
             for (con_size y = 0; y < sink->getHeight(); y++) {
                 size_t offset = y * width;
-                source->read(&buffer[0], offset, width);
-                sink->write(&buffer[0], offset, width);
+                source->read((DT*)buffer, offset, width);
+                sink->write((DT*)buffer, offset, width);
             }
             return;
         }

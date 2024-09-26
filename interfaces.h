@@ -26,10 +26,14 @@ namespace cons {
         virtual void setWidth(T1 width) = 0;
         virtual void setHeight(T1 height) = 0;
 
-        T1 get(const T1 &x, const T1 &y) {
+        virtual _2d<T1> getDimensions() {
+            return _2d<T1>(getWidth(), getHeight());
+        }
+
+        virtual T1 get(const T1 &x, const T1 &y) {
             return (y * getWidth()) + x;   
         }
-        T1 getSample(const T2 &x, const T2 &y) {
+        virtual T1 getSample(const T2 &x, const T2 &y) {
             return get(getWidth(x), getHeight(y));
         }
     };
@@ -58,10 +62,10 @@ namespace cons {
             return v / con_norm(getHeight());
         }
         con_norm getSampleWidthStep() override {
-            return getSampleWidth() / con_norm(getWidth());
+            return getSampleWidth() / con_norm(getWidth()+1);
         }
         con_norm getSampleHeightStep() override {
-            return getSampleHeight() / con_norm(getHeight());
+            return getSampleHeight() / con_norm(getHeight()+1);
         }
         con_size getWidth() override {
             return width;
@@ -79,10 +83,10 @@ namespace cons {
             return getWidth() * getHeight();
         } 
         con_norm getSampleWidth() override {
-            return 1.000001f;
+            return 1.0;//0.999999f;
         }
         con_norm getSampleHeight() override {
-            return 1.000001f;
+            return 1.0;//0.999999f;
         }
     };
 

@@ -84,27 +84,9 @@ namespace cons {
         }
     };
 
-    template<typename Tchar>
-    struct ncurses_cpix_sink : 
-    public i_console_sink<cpix_Tchar<Tchar>>, 
-    public virtual i_ncurses_func,
-    public virtual i_color {
-        using Tcc = cpix_Tchar<Tchar>;
-        ssize_t write(const Tcc* buf, size_t start, size_t count) override {
-            for (size_t i = 0; i < count; i++) {
-                //setColor(buf[i].co & 0x0F);
-                waddch(this->getWindow(), buf[i].ch);
-            }
-            this->refreshCon();
-            return count;
-        }
-    };
-
-    typedef ncurses_cpix_sink<con_wide> ncurses_cpix_sink_wide;
-
     struct ncurses_char_sink : 
-    public i_console_sink<con_basic>, 
-    public i_console_sink<con_wide>,
+    public virtual i_console_sink<con_basic>, 
+    public virtual i_console_sink<con_wide>,
     public virtual i_ncurses_func {
         ssize_t write(const con_basic* buf, size_t start, size_t count) override {
             waddnstr(getWindow(), buf, count);
@@ -118,6 +100,26 @@ namespace cons {
         }
     };
 
+    template<typename Tchar>
+    struct ncurses_cpix_sink : 
+    public virtual i_console_sink<cpix_Tchar<Tchar>>,
+    public virtual i_ncurses_func,
+    public virtual i_console_sink<Tchar>,
+    public virtual i_color {
+        using Tcc = cpix_Tchar<Tchar>;
+        using i_console_sink<Tchar>::write;
+        ssize_t write(const Tcc* buf, size_t start, size_t count) override {
+            for (size_t i = 0; i < count; i++) {
+                this->setColor(buf[i].co);
+                this->write(&buf[i].ch, 0, 1);
+            }
+            this->refreshCon();
+            return count;
+        }
+    };
+
+    typedef ncurses_cpix_sink<con_wide> ncurses_cpix_sink_wide;
+
     template<typename ascii_dt, typename unicode_dt>
     struct console_ncurses : 
     public ncurses_impl, 
@@ -126,16 +128,17 @@ namespace cons {
     template<typename con_base>
     struct console_ncurses_color : 
     public con_base,
-    public ncurses_cpix_sink_wide,
+    public virtual ncurses_cpix_sink_wide,
     public virtual i_color {
         void setColor(con_color color) override {
-            attron(COLOR_PAIR(color));
+            attron(COLOR_PAIR(color+1));
         }
         err_ret open() override {
             err_ret ret = con_base::open();
             if (ret != ENUMS::NO_ERROR) 
                 return ret | ENUMS::ERROR;
             start_color();
+            /*
             init_pair(1, COLOR_WHITE, COLOR_BLACK);
             init_pair(2, COLOR_RED, COLOR_BLACK);
             init_pair(3, COLOR_GREEN, COLOR_BLACK);
@@ -151,19 +154,48 @@ namespace cons {
             init_pair(13, COLOR_BLACK, COLOR_MAGENTA);
             init_pair(14, COLOR_BLACK, COLOR_CYAN);
             init_pair(15, COLOR_BLACK, COLOR_BLACK);
+
+            auto map_color = [](int i) {
+                if (COLORS > 255)
+                    ;//return i;
+                switch (i) {
+                    case COLOR_BLUE: return COLOR_RED;
+                    case COLOR_RED: return COLOR_BLUE;
+                    case 0b1000 | COLOR_BLUE: return 0b1000 | COLOR_RED;
+                    case 0b1000 | COLOR_RED: return 0b1000 | COLOR_BLUE;
+                    default: return i;
+                }
+            };
+            */
+            auto map_color = [](int c) {
+                int i = c & 8;
+                switch (c ^ i) {
+                    case COLOR_BLUE: return COLOR_RED | i;
+                    case COLOR_RED: return COLOR_BLUE | i;
+                    default: return c;
+                }
+            };
+
+            if (COLORS == 256) {
+                for (int i = 0; i < 256; i++) {
+                    init_pair(i + 1, map_color(i % 16), map_color((i / 16) % 16));
+                }
+            } else {
+                assert(true);
+            }
             return ENUMS::NO_ERROR;
         }
         con_color last_color;
 
         template<typename T>
         void write(T text, con_color color = 1) {
-            setColor(2);
+            setColor(color);
             con_base::write(text, 0, getLength(text));
         }
 
         template<typename T>
         void write(con_pos x, con_pos y, T text, con_color color = 1) {
-            setColor(3);
+            setColor(color);
             con_base::write(x, y, text);
         }
 

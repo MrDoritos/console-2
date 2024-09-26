@@ -3,6 +3,8 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "lib/stb_image.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "lib/stb_image_write.h"
 
 namespace cons {
     /*
@@ -44,8 +46,15 @@ namespace cons {
             _buffer = new T[ib::getSize()];
         }
 
+        virtual void make(_2d<con_size> size) {
+            make(size.x, size.y);
+        }
+
         void clear() override {
-            memset(_buffer, 0, getBytes());  
+            //memset(_buffer, 0, getBytes());  
+            for (size_t i = 0; i < ib::getSize(); i++) {
+                _buffer[i] = T((int)' ');
+            }
         }
 
         void clear(con_pos width, con_pos height) override {
@@ -76,7 +85,10 @@ namespace cons {
         }
 
         ssize_t write(const T* buf, size_t start, size_t count) override {
-            memcpy(_buffer + start, buf, count);
+            //size_t _s = start * sizeof(*buf);
+            //size_t _c = count * sizeof(*buf);
+            //memcpy(_buffer + _s, buf, _c);
+            memcpy(&_buffer[start], &buf[0], count * sizeof(*buf));
             return count;
         }
 
@@ -89,7 +101,10 @@ namespace cons {
         }
 
         ssize_t read(T* buf, size_t start, size_t count) override {
-            memcpy(buf, _buffer + start, count);
+            //void* _s = start * sizeof(*buf);
+            //void* _c = count * sizeof(*buf);
+            //memcpy(buf, (void*)_buffer + _s, _c);
+            memcpy(&buf[0], &_buffer[start], count * sizeof(*buf));
             return count;
         }
 
@@ -120,6 +135,22 @@ namespace cons {
         }
         pixel_image():pixel_image(0, 0) {}
 
+        using bp = buffer_pixel;
+        using b = buffer<T>;
+        using bp::write;
+        using bp::read;
+        using b::write;
+        using b::read;
+        using bp::writeSample;
+        using bp::readSample;
+        using b::writeSample;
+        using b::readSample;
+
+        void clear() override {
+            buffer_pixel::clear();
+            buffer<T>::clear();
+        }
+
         void make() override {
             buffer_pixel::make();
             buffer<T>::make();
@@ -130,8 +161,17 @@ namespace cons {
             buffer<T>::make(width, height);
         }
 
+        void make(_2d<con_size> size) {
+            bp::make(size);
+            b::make(size);
+        }
+
         void compose() {
             cons::copyTo(buffer_pixel::sink(), buffer<T>::sink());
+        }
+
+        int save(const char* filename) {
+            return stbi_write_png(filename, buffer_pixel::getWidth(), buffer_pixel::getHeight(), 4, (void*)buffer_pixel::_buffer, 0);
         }
 
         int load(const char* filename) {
