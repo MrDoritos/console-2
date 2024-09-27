@@ -16,6 +16,7 @@ namespace cons {
         buffer(con_size width, con_size height) : buffer() {
             make(width, height);
         }
+        buffer(_2dlength<con_size> size) : buffer(size.width, size.height) {}
         buffer() : i_buffer_rw_dim<T>() {
             _buffer = nullptr;
         }
@@ -53,7 +54,10 @@ namespace cons {
         void clear() override {
             //memset(_buffer, 0, getBytes());  
             for (size_t i = 0; i < ib::getSize(); i++) {
-                _buffer[i] = T((int)' ');
+                if constexpr (std::is_constructible_v<T>)
+                    _buffer[i] = T();
+                else
+                    _buffer[i] = T((int)' ');
             }
         }
 

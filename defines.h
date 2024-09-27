@@ -64,11 +64,12 @@ namespace cons {
     template<typename _bit>
     struct _pixel {
         typedef _bit value_type;
+        static constexpr _bit bit_max { std::numeric_limits<_bit>::max() };
         _pixel()
-        :r(0), g(0), b(0), a(255) {}
-        _pixel(int dummy) : _pixel() {}
+        :r(0), g(0), b(0), a(bit_max) {}
+        //_pixel(int dummy) : _pixel() {}
         _pixel(_bit r, _bit g, _bit b)
-        :_pixel(r, g, b, 255) {}
+        :_pixel(r, g, b, bit_max) {}
         _pixel(_bit r, _bit g, _bit b, _bit a)
         :r(r), g(g), b(b), a(a) {}
         _bit r,g,b,a;
@@ -100,11 +101,12 @@ namespace cons {
 
     template<typename character, typename color, typename alpha>
     struct _cc {
-        _cc() : ch(0), co(0), a(255) {}
+        static constexpr color color_max { std::numeric_limits<color>::max() };
+        _cc() : ch(0), co(0), a(color_max) {}
         _cc(pixel pix) : _cc(pix,getCharacter<character>(pix)) {}
         _cc(pixel pix, character ch) : ch(ch), co(pix.value()), a(pix.a) {}
-        _cc(character ch, color co, alpha a) : ch(ch), co(co), a(a) {}
-        _cc(character ch) : ch(ch), co(0), a(255) {}
+        _cc(character ch, color co, alpha a = color_max) : ch(ch), co(co), a(a) {}
+        _cc(character ch) : ch(ch), co(0), a(color_max) {}
         character ch;
         color co;
         alpha a;
@@ -129,13 +131,14 @@ namespace cons {
     struct _2dlength {
         T width, height;
         _2dlength(T width, T height) : width(width), height(height) {}
+        _2dlength(const _2d<T> &len) : _2dlength(len.x, len.y) {}
         _2dlength() : _2dlength(0,0) {}
     };
 
     template<typename T>
     struct _2dsize : _2d<T>, _2dlength<T> {
         _2dsize(T x, T y, T width, T height) : _2d<T>(x, y), _2dlength<T>(width, height) {}
-        _2dsize(T width, T height) : _2dlength<T>(0,0,width,height) {}
+        _2dsize(T width, T height) : _2dlength<T>(width,height) {}
         _2dsize() : _2d<T>(), _2dlength<T>() {}
     };
 

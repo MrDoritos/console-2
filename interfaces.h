@@ -144,6 +144,12 @@ namespace cons {
         i_buffer_sink_dim<T> *sink();
     };
 
+    template<typename T>
+    struct i_buffer_source_dim : public virtual dim_prov, public i_buffer_source<T> {
+        i_buffer_source_dim(con_size width, con_size height) : dim_prov(width, height) {}
+        i_buffer_source_dim() : dim_prov() {}
+    };
+
     //template<typename T, typename DT, std::enable_if_t<std::is_same_v<T, DT>, int> = 0>
     template<typename T>
     i_buffer_sink_dim<T> *i_buffer_sink_dim<T>::sink() {
@@ -160,7 +166,10 @@ namespace cons {
     Read/Write interface with dimensions
     */
     template<typename T>
-    struct i_buffer_rw_dim : public virtual dim_prov, public i_buffer_rw<T> {
+    struct i_buffer_rw_dim : 
+        public virtual dim_prov, 
+        public i_buffer_source_dim<T>,
+        public i_buffer_sink_dim<T> {
         template<typename DT>  i_buffer_rw_dim<DT>* sink() { return this; }
         virtual i_buffer_rw_dim<T>* sink() { return this; }
         i_buffer_rw_dim(con_size width, con_size height) : dim_prov(width, height) {}
