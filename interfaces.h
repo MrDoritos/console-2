@@ -33,8 +33,14 @@ namespace cons {
         virtual T1 get(const T1 &x, const T1 &y) {
             return (y * getWidth()) + x;   
         }
+        virtual T1 get(const _2d<T1> &pos) {
+            return get(pos.x, pos.y);
+        }
         virtual T1 getSample(const T2 &x, const T2 &y) {
             return get(getWidth(x), getHeight(y));
+        }
+        virtual T1 getSample(const _2d<T2> &pos) {
+            return getSample(pos.x, pos.y);
         }
     };
 

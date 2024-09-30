@@ -102,11 +102,12 @@ namespace cons {
     template<typename character, typename color, typename alpha>
     struct _cc {
         static constexpr color color_max { std::numeric_limits<color>::max() };
-        _cc() : ch(0), co(0), a(color_max) {}
+        static const con_color default_color = 15;
+        _cc() : ch(0), co(default_color), a(color_max) {}
         _cc(pixel pix) : _cc(pix,getCharacter<character>(pix)) {}
         _cc(pixel pix, character ch) : ch(ch), co(pix.value()), a(pix.a) {}
         _cc(character ch, color co, alpha a = color_max) : ch(ch), co(co), a(a) {}
-        _cc(character ch) : ch(ch), co(0), a(color_max) {}
+        _cc(character ch) : ch(ch), co(default_color), a(color_max) {}
         character ch;
         color co;
         alpha a;
@@ -118,28 +119,130 @@ namespace cons {
     using cpix_Tchar = _cc<Tchar, con_color, con_color>;
 
     template<typename T>
+    struct _2dlength;
+
+    template<typename T>
     struct _2d {
         T x, y;
-        _2d(T x, T y) : x(x), y(y) {}
-        _2d() : x(0), y(0) {}
+        _2d(T _x, T _y) : x(_x), y(_y) {}
+        _2d(_2dlength<T> len) : _2d(len.width, len.height) {}
+        _2d() : _2d(0,0) {}
+        //_2d(const i_op2<T> &iop) : _2d(iop._a, iop._b) {}
+
         T distance(_2d<T> other) {
             return sqrt((x - other.x) * (x - other.x) + (y - other.y) * (y - other.y));
         }
+
+        _2d<T> operator+(const _2d<T> &other) const {
+            return _2d<T>(x + other.x, y + other.y);
+        }
+
+        _2d<T> operator-(const _2d<T> &other) const {
+            return _2d<T>(x - other.x, y - other.y);
+        }
+
+        _2d<T> operator*(const _2d<T> &other) const {
+            return _2d<T>(x * other.x, y * other.y);
+        }
+
+        _2d<T> operator/(const _2d<T> &other) const {
+            return _2d<T>(x / other.x, y / other.y);
+        }
+
+        template<typename I>
+        operator _2d<I>() const {
+            return _2d<I>(I(x), I(y));
+        }
+
     };
 
     template<typename T>
     struct _2dlength {
         T width, height;
-        _2dlength(T width, T height) : width(width), height(height) {}
-        _2dlength(const _2d<T> &len) : _2dlength(len.x, len.y) {}
+        _2dlength(T _width, T _height) : width(_width), height(_height) {}
         _2dlength() : _2dlength(0,0) {}
+        //_2dlength(const i_op2<T> &iop) : _2dlength(iop._a, iop._b) {}
+        _2dlength(_2d<T> pos) : _2dlength(pos.x, pos.y) {}
+
+        template<typename I>
+        operator _2dlength<I>() const {
+            return _2dlength<I>(I(width), I(height));
+        }
+
+        operator _2d<T>() const {
+            return _2d<T>(width, height);
+        }
+
+        operator const _2d<T>&() const {
+            return *(const _2d<T>*)this;
+        }
+
+        _2dlength<T> operator+(_2dlength<T> &other) const {
+            return _2dlength<T>(width + other.width, height + other.height);
+        }
     };
 
     template<typename T>
     struct _2dsize : _2d<T>, _2dlength<T> {
-        _2dsize(T x, T y, T width, T height) : _2d<T>(x, y), _2dlength<T>(width, height) {}
-        _2dsize(T width, T height) : _2dlength<T>(width,height) {}
+        _2dsize(const T &x, const T &y, const T &width, const T &height) : _2d<T>(x, y), _2dlength<T>(width, height) {}
+        _2dsize(const T &width, const T &height) : _2dlength<T>(width,height) {}
         _2dsize() : _2d<T>(), _2dlength<T>() {}
+        _2dsize(const _2d<T> &pos, _2d<T> const &len) : _2d<T>(pos), _2dlength<T>(len) {}
+
+        typedef _2d<T> pos;
+        typedef _2dlength<T> length;
+
+        template<typename I>
+        operator _2dsize<I>() const {
+            return _2dsize<I>(I(pos::x), I(pos::y), I(length::width), I(length::height));
+        }
+
+        template<typename V>
+        _2dsize<T> operator+(const V &other) const {
+            if constexpr(std::is_same_v<_2dsize<T>, V>)
+                return _2dsize<T>(pos::operator+(other.getStart()), length::operator+(other.getLength()));
+            else
+            if constexpr(std::is_same_v<_2d<T>, V>)
+                return _2dsize<T>(pos::operator+(other), getLength());
+            else
+            if constexpr(std::is_same_v<_2dlength<T>, V>)
+                return _2dsize<T>(getStart(), length::operator+(other));
+            else
+                return _2dsize<T>(pos::operator+(other), length::operator+(other));
+        }
+
+        template<typename IN>
+        _2dsize<T> norm(const _2dsize<IN> &bound) const {
+            const pos &p = getStart();
+            const pos &len = getLength();
+            const pos bp = bound.getStart();
+            const pos blen = (pos)bound.getLength();
+            return _2dsize<T>((p-bp) / blen, len / blen);
+        }
+        template<typename IN>
+        _2dsize<T> denorm(const _2dsize<IN> &bound) const {
+            const pos &p = getStart();
+            const pos &len = (pos&)getLength();
+            const pos bp = bound.getStart();
+            const pos blen = (pos)bound.getLength();
+            return _2dsize<T>((p*blen) + bp, len * blen);
+        }
+
+        const _2dlength<T> &getLength() const {
+            return (const length&) *this;
+        }
+
+        _2dlength<T> getLength() {
+            return (length&)*this;
+        }
+
+        const _2d<T> &getStart() const {
+            return (const pos&) *this;
+        }
+
+        _2d<T> getStart() {
+            return (pos&)*this;
+        }
     };
 
     template<typename T>
