@@ -23,14 +23,21 @@ namespace cons {
     void copyTo(T1<DT>* source, T2<DT>* sink) {
     //template<typename T1, typename T2>
     //void copyTo(T1* source, T2* sink, sizef size) {
-        if (source->getWidth() == sink->getWidth() && source->getHeight() == sink->getHeight()) {
-            int width = sink->getWidth();
-            size_t size = sizeof(DT);
-            DT *buffer = (DT*)alloca(width * size);
-            for (con_size y = 0; y < sink->getHeight(); y++) {
-                size_t offset = y * width;
-                source->read((DT*)buffer, offset, width);
-                sink->write((DT*)buffer, offset, width);
+        if (source->getWidth() == sink->getWidth()) {
+            if (source->getHeight() == sink->getHeight()) {
+                size_t size = sink->getSize();
+                DT *buffer = (DT*)alloca(sizeof(DT) * size);
+                source->read((DT*)buffer, 0, size);
+                sink->write((DT*)buffer, 0, size);
+            } else {
+                int width = sink->getWidth();
+                size_t size = sizeof(DT);
+                DT *buffer = (DT*)alloca(width * size);
+                for (con_size y = 0; y < sink->getHeight(); y++) {
+                    size_t offset = y * width;
+                    source->read((DT*)buffer, offset, width);
+                    sink->write((DT*)buffer, offset, width);
+                }
             }
             return;
         }

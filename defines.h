@@ -162,7 +162,7 @@ namespace cons {
         _2dlength(T _width, T _height) : width(_width), height(_height) {}
         _2dlength() : _2dlength(0,0) {}
         //_2dlength(const i_op2<T> &iop) : _2dlength(iop._a, iop._b) {}
-        _2dlength(_2d<T> pos) : _2dlength(pos.x, pos.y) {}
+        _2dlength(const _2d<T> &pos) : _2dlength(pos.x, pos.y) {}
 
         template<typename I>
         operator _2dlength<I>() const {
@@ -177,7 +177,7 @@ namespace cons {
             return *(const _2d<T>*)this;
         }
 
-        _2dlength<T> operator+(_2dlength<T> &other) const {
+        _2dlength<T> operator+(const _2dlength<T> &other) const {
             return _2dlength<T>(width + other.width, height + other.height);
         }
     };
