@@ -58,6 +58,7 @@ int main() {
     while (con_key(con.readKeyAsync()).key != 'q') {
         con.write("Hello, world!\n");
         con_mouse m = con.readMouse();
+        copyTo(frag_con.sink(), con.cpix_sink::sink(), {float(m.x) / con.getWidth(), float(m.y) / con.getHeight(), 0.5, 0.5});
         fprintf(stderr, "Mouse: %d %d %d %d %d\n", m.x, m.y, m.z, m.state, m.id);
     }
 

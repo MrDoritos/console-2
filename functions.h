@@ -53,11 +53,17 @@ namespace cons {
     Will be used for fast copying (that's why it's separate from sampleTo)
     */
     template<template<typename> typename T1, template<typename> typename T2,typename DT>
-    void copyTo(T1<DT>* source, T2<DT>* sink, sizef size) {
+    void copyTo(T1<DT>* source, T2<DT>* sink, const sizef &size, const sizef &lims = {0,0,1,1}) {
     //template<typename T1, typename T2>
     //void copyTo(T1* source, T2* sink, sizef size) {
         for (con_norm y = 0; y < size.height; y+=sink->getSampleHeightStep()) {
+            if (y + size.y > lims.height || y + size.y < lims.y)
+                continue;
+
             for (con_norm x = 0; x < size.width; x+=sink->getSampleWidthStep()) {
+                if (x + size.x > lims.width || x + size.x < lims.x)
+                    continue;
+
                 sink->writeSample(x + size.x, y + size.y, source->readSample(x / size.width, y / size.width));
             }
         }
