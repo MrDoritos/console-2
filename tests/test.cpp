@@ -21,8 +21,8 @@ int main() {
 
     con.write("Hello, world!\n");
 
-    using at = atlas<cpix_sink::value_type>;
-    using atf = atlas_fragment<cpix_sink::value_type>;
+    using at = atlas<pixel, image>;
+    using atf = atlas_fragment<pixel, image>;
 
     at atlas(8);
 
@@ -33,8 +33,9 @@ int main() {
     }
         
     atf frag = atlas.fragment({1, 1, 1, 1});
+    auto frag_con = source_convert<i_buffer_rw_dim, pixel, buffer, cpix_wide>(frag.sink());
     
-    copyTo(frag.sink(), con.cpix_sink::sink(), {0.25, 0.25, 0.5, 0.5});
+    copyTo(frag_con.sink(), con.cpix_sink::sink(), {0.25, 0.25, 0.5, 0.5});
     //copyTo(frag.sink<con_wide>(), con.unicode::sink<con_wide>());
     //copyTo(&frag, con.sink<con_wide>());
     //copyTo(frag.sink<converter<con_wide>>(), con.sink<converter<con_wide>>());

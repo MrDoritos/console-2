@@ -133,6 +133,10 @@ namespace cons {
             return sqrt((x - other.x) * (x - other.x) + (y - other.y) * (y - other.y));
         }
 
+        T product() {
+            return x * y;
+        }
+
         _2d<T> operator+(const _2d<T> &other) const {
             return _2d<T>(x + other.x, y + other.y);
         }

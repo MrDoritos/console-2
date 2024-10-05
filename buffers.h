@@ -52,7 +52,6 @@ namespace cons {
         }
 
         void clear() override {
-            //memset(_buffer, 0, getBytes());  
             for (size_t i = 0; i < ib::getSize(); i++) {
                 if constexpr (std::is_constructible_v<T>)
                     _buffer[i] = T();
@@ -67,6 +66,24 @@ namespace cons {
 
         T* _buffer;
 
+
+        T readSample(con_norm x, con_norm y) override {
+            return _buffer[ib::getSample(x, y)];
+        }
+
+        T read(con_pos x, con_pos y) override {
+            return _buffer[ib::get(x, y)];
+        }
+
+        ssize_t read(T* buf, size_t start, size_t count) override {
+            memcpy(&buf[0], &_buffer[start], count * sizeof(*buf));
+            return count;
+        }
+
+        ssize_t read(T* buf, size_t count) override {
+            return read(buf, 0, count);
+        }
+
         void writeSample(con_norm x, con_norm y, T value) override {
             _buffer[ib::getSample(x, y)] = value;
         }
@@ -75,23 +92,12 @@ namespace cons {
             _buffer[ib::get(x, y)] = value;
         }
 
-        T read(con_pos x, con_pos y) override {
-            return _buffer[ib::get(x, y)];
-        }
-
-        T readSample(con_norm x, con_norm y) override {
-            return _buffer[ib::getSample(x, y)];
-        }
-
         ssize_t write(con_pos x, con_pos y, const T* value) override {
             size_t pos = ib::get(x, y);
             return write(value, pos, getLength(value));
         }
 
         ssize_t write(const T* buf, size_t start, size_t count) override {
-            //size_t _s = start * sizeof(*buf);
-            //size_t _c = count * sizeof(*buf);
-            //memcpy(_buffer + _s, buf, _c);
             memcpy(&_buffer[start], &buf[0], count * sizeof(*buf));
             return count;
         }
@@ -104,135 +110,116 @@ namespace cons {
             return write(buf, 0, getBytes());
         }
 
-        ssize_t read(T* buf, size_t start, size_t count) override {
-            //void* _s = start * sizeof(*buf);
-            //void* _c = count * sizeof(*buf);
-            //memcpy(buf, (void*)_buffer + _s, _c);
-            memcpy(&buf[0], &_buffer[start], count * sizeof(*buf));
-            return count;
-        }
-
-        ssize_t read(T* buf, size_t count) override {
-            return read(buf, 0, count);
-        }
-
         void copyTo(i_buffer_sink_dim<T>* buffer) override {
             cons::copyTo(this, buffer);
         }
     };
 
-    typedef buffer<con_basic> buffer_basic;
-    typedef buffer<con_wide> buffer_wide;
-    typedef buffer<con_color> buffer_color;
-    typedef buffer<pixel> buffer_pixel;
+    template<template<typename> typename INB, typename INT,
+            template<typename> typename OUTB, typename OUTT>
+    struct source_convert : OUTB<OUTT> {
+        INB<INT> *source;
 
+        source_convert(INB<INT> * b):source(b)  {}
+
+        OUTT readSample(con_norm x, con_norm y) override {
+            return convert(source->readSample(x, y));
+        }
+
+        OUTT read(con_pos x, con_pos y) override {
+            return convert(source->read(x, y));
+        }
+
+        virtual OUTT convert(INT in) {
+            return OUTT(in);
+        }
+
+        ssize_t read(OUTT* buf, size_t start, size_t count) override {
+            INT inbuf[count];
+            ssize_t cnt = source->read(&inbuf[0], start, count);
+            for (int i = 0; i < count; i++)
+                buf[i] = convert(inbuf[i]);
+            return count;
+        }
+
+        ssize_t read(OUTT* buf, size_t count) override {
+            INT inbuf[count];
+            ssize_t cnt = source->read(&inbuf[0], count);
+            for (int i = 0; i < count; i++)
+                buf[i] = convert(inbuf[i]);
+            return count;
+        }
+    };
     /*
-    pixel buffer + conversion buffer
+    load/save image buffer
     */
-    template<typename T>
-    struct pixel_image : public buffer_pixel, public buffer<T> {
-        pixel_image(con_size width, con_size height) 
-        :buffer_pixel(width, height),
-         buffer<T>(width, height) {
-            bpp = 0;
+    template<typename pixT>
+    struct image : public buffer<pixT> {
+        image() {
+            bpp = 4;
             stbi = false;
         }
-        pixel_image():pixel_image(0, 0) {}
 
-        using bp = buffer_pixel;
-        using b = buffer<T>;
-        using bp::write;
-        using bp::read;
-        using b::write;
-        using b::read;
-        using bp::writeSample;
-        using bp::readSample;
-        using b::writeSample;
-        using b::readSample;
-
-        void clear() override {
-            buffer_pixel::clear();
-            buffer<T>::clear();
+        image(con_size width, con_size height) 
+        : buffer<pixT>(width, height) {
+            bpp = 4;
+            stbi = false;
         }
 
-        void make() override {
-            buffer_pixel::make();
-            buffer<T>::make();
+        bool stbi;
+        int bpp;
+
+        virtual int save(const char* filename) {
+            if (!this->_buffer)
+                return ENUMS::ERROR;
+
+            int bpp = this->getBytes() / this->getDimensions().product();
+
+            return stbi_write_png(filename, this->getWidth(), 
+                                  this->getHeight(), bpp, this->_buffer, 0);
         }
 
-        void make(con_size width, con_size height) override {
-            buffer_pixel::make(width, height);
-            buffer<T>::make(width, height);
-        }
-
-        void make(_2d<con_size> size) {
-            bp::make(size);
-            b::make(size);
-        }
-
-        void compose() {
-            cons::copyTo(buffer_pixel::sink(), buffer<T>::sink());
-        }
-
-        int save(const char* filename) {
-            return stbi_write_png(filename, buffer_pixel::getWidth(), buffer_pixel::getHeight(), 4, (void*)buffer_pixel::_buffer, 0);
-        }
-
-        int load(const char* filename) {
+        virtual int load(const char* filename) {
             int w, h, n;
 
             unsigned char *data;
             data = stbi_load(filename, &w, &h, &n, 0);
 
-            bpp = n;
-            buffer_pixel::make(w, h);
-            buffer<T>::make(w, h);
-
-            pixel *dest = buffer_pixel::_buffer;
-
-            memcpy((void*)dest, data, w * h * n);
-
-            stbi_image_free(data);
-
             if (!data)
                 return ENUMS::ERROR;
 
+            bpp = n;
+            this->make(w, h);
+            memcpy((void*)this->_buffer, data, w * h * n);
+            stbi_image_free(data);
             stbi = true;
-
-            compose();
 
             return ENUMS::NO_ERROR;
         }
-
-
-        int bpp;
-        bool stbi;
     };
 
-    template<typename T>
+    template<typename T, template<typename> typename bufT>
     struct atlas_fragment;
 
     /*
     texture atlas
     */
-    template<typename T>
-    struct atlas : public pixel_image<T> {
+    template<typename T, template<typename> typename bufT>
+    struct atlas : public bufT<T> {
         int spriteSize;
-        atlas(int spriteSize):pixel_image<T>() {
+        atlas(int spriteSize):bufT<T>() {
             this->spriteSize = spriteSize;
         }
 
-        atlas_fragment<T> fragment(sizei sprite_units);
+        atlas_fragment<T, bufT> fragment(sizei sprite_units);
     };
 
     /*
     maps to atlas
     */
-    template<typename T>
+    template<typename T, template<typename> typename bufT>
     struct atlas_fragment : public i_buffer_rw_dim<T> {
-        using ib = i_buffer_rw_dim<T>;
-        using ip = i_buffer_rw_dim<pixel>;
-        atlas<T>* sourceAtlas;
+        bufT<T>* sourceAtlas;
         sizei atlasPixelArea;
         sizei atlasSpriteArea;
 
@@ -240,63 +227,77 @@ namespace cons {
             sourceAtlas = nullptr;
         }
 
-        posf mapToAtlas(posf p) {
+        posf normToAtlas(const posf &p) {
             posf r;
             r.x = atlasPixelArea.x + (p.x * atlasPixelArea.width);
             r.y = atlasPixelArea.y + (p.y * atlasPixelArea.height);
-            r.x /= ((ib*)sourceAtlas)->getWidth();
-            r.y /= ((ib*)sourceAtlas)->getHeight();
+            r.x /= sourceAtlas->getWidth();
+            r.y /= sourceAtlas->getHeight();
             return r;
         }
 
-        pixel sampleImage(con_norm x, con_norm y) {
-            posf atl = mapToAtlas(posf(x, y));
-            return ((ip*)sourceAtlas)->readSample(atl.x, atl.y);
+        posi mapToAtlas(const posi &p) {
+            posi r;
+            r.x = atlasPixelArea.x + (p.x * atlasPixelArea.width);
+            r.y = atlasPixelArea.y + (p.y * atlasPixelArea.height);
+            return r;
         }
 
         T readSample(con_norm x, con_norm y) override {
-            posf atl = mapToAtlas(posf(x, y));
-            return ((ib*)sourceAtlas)->readSample(atl.x, atl.y);
-        }
-
-        void writeSample(con_norm x, con_norm y, T value) override {
-            posf atl = mapToAtlas(posf(x, y));
-            ((ib*)sourceAtlas)->writeSample(atl.x, atl.y, value);
+            auto atl = normToAtlas({x, y});
+            return sourceAtlas->readSample(atl.x, atl.y);
         }
 
         T read(con_size x, con_size y) override {
-            posf atl = mapToAtlas(posf(x, y));
-            return ((ib*)sourceAtlas)->read(atl.x, atl.y);
-        }
-
-        void write(con_size x, con_size y, T value) override {
-            posf atl = mapToAtlas(posf(x, y));
-            ((ib*)sourceAtlas)->write(atl.x, atl.y, value);
-            
-        }
-
-        ssize_t write(con_pos x, con_pos y, const T* value) override {
-            return 0;
-        }
-
-        ssize_t write(const T* buf, size_t start, size_t count) override {
-            return 0;
-        }
-
-        ssize_t write(const T* buf, size_t count) override {
-            return 0;
-        }
-
-        ssize_t write(const T* buf) override {
-            return 0;
+            auto atl = mapToAtlas({x, y});
+            return sourceAtlas->read(atl.x, atl.y);
         }
 
         ssize_t read(T* buf, size_t start, size_t count) override {
-            return 0;
+            for (size_t i = 0; i < count; i++) {
+                int x = i % atlasSpriteArea.width;
+                int y = i / atlasSpriteArea.width;
+                auto atl = mapToAtlas({x, y});
+                buf[i] = sourceAtlas->read(atl.x, atl.y);
+            }
+            return count;
         }
 
         ssize_t read(T* buf, size_t count) override {
-            return 0;
+            return read(buf, 0, count);
+        }
+
+        void writeSample(con_norm x, con_norm y, T value) override {
+            auto atl = normToAtlas({x, y});
+            sourceAtlas->writeSample(atl.x, atl.y, value);
+        }
+
+        void write(con_size x, con_size y, T value) override {
+            auto atl = mapToAtlas({x, y});
+            sourceAtlas->write(atl.x, atl.y, value);            
+        }
+
+
+        ssize_t write(const T* buf, size_t start, size_t count) override {
+            for (size_t i = 0; i < count; i++) {
+                int x = i % atlasPixelArea.width;
+                int y = i / atlasPixelArea.width;
+                posf atl = mapToAtlas({x, y});
+                sourceAtlas->write(atl.x, atl.y, buf[i]);
+            }
+            return count;
+        }
+
+        ssize_t write(const T* buf, size_t count) override {
+            return write(buf, 0, count);
+        }
+
+        ssize_t write(const T* buf) override {
+            return write(buf, 0, getLength(buf));
+        }
+
+        ssize_t write(con_size x, con_size y, const T* value) override {
+            return write(value, mapToAtlas({x, y}).product(), getLength(value));
         }
 
         void copyTo(i_buffer_sink_dim<T>* buffer) override {
@@ -304,9 +305,9 @@ namespace cons {
         }
     };
 
-    template<typename T>
-    atlas_fragment<T> atlas<T>::fragment(sizei sprite_units) {
-        atlas_fragment<T> frag;
+    template<typename T, template<typename> typename bufT>
+    atlas_fragment<T, bufT> atlas<T, bufT>::fragment(sizei sprite_units) {
+        atlas_fragment<T, bufT> frag;
         sizei pixel_units;
         frag.sourceAtlas = this;
 
