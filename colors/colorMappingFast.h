@@ -568,7 +568,7 @@ namespace cons {
 				for (int i = 0, b = 0; i < 768; i++) {
 					con_color background = ((i / 3) % 256) >> 4;
 					con_color foreground = ((i / 3) % 16);
-					wchar_t character = L" ░▒"[i % 3];
+					wchar_t character = characters[i % 3];
 					if (background == foreground && character != L' ')
 						continue;
 					if (background != foreground && character == L' ')
