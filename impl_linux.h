@@ -15,7 +15,8 @@ namespace cons {
         virtual void flush() = 0;
     };
 
-    struct ncurses_state : public virtual i_ncurses_func {
+    struct ncurses_state : 
+    public virtual i_ncurses_func {
         winsize w;
         WINDOW* win;
         SCREEN* scr;
@@ -27,7 +28,9 @@ namespace cons {
         void flush() override { refreshCon(); }
     };
 
-    struct ncurses_impl : public ncurses_state, public i_console {
+    struct ncurses_impl : 
+    public ncurses_state, 
+    public i_console {
         bool isReady() override { return ready; }
         con_size getWidth() override { refreshSize(); return w.ws_col; }
         con_size getHeight() override { refreshSize(); return w.ws_row; }
@@ -87,7 +90,7 @@ namespace cons {
     struct ncurses_char_sink : 
     public virtual i_console_sink<con_basic>, 
     public virtual i_console_sink<con_wide>,
-    public virtual i_ncurses_func {
+    private virtual i_ncurses_func {
         ssize_t write(const con_basic* buf, size_t start, size_t count) override {
             waddnstr(getWindow(), buf, count);
             this->refreshCon();
@@ -103,32 +106,40 @@ namespace cons {
     template<typename Tchar>
     struct ncurses_cpix_sink : 
     public virtual i_console_sink<cpix_Tchar<Tchar>>,
-    public virtual i_ncurses_func,
-    public virtual i_console_sink<Tchar>,
-    public virtual i_color {
+    private virtual i_ncurses_func,
+    private virtual i_console_sink<Tchar>,
+    private virtual i_color {
         using Tcc = cpix_Tchar<Tchar>;
-        using i_console_sink<Tchar>::write;
+        //using i_console_sink<Tchar>::write;
         ssize_t write(const Tcc* buf, size_t start, size_t count) override {
             for (size_t i = 0; i < count; i++) {
-                this->setColor(buf[i].co);
-                this->write(&buf[i].ch, 0, 1);
+                //this->setColor(buf[i].co);
+                //this->write(&buf[i].ch, 0, 1);
             }
-            this->refreshCon();
+            //this->refreshCon();
             return count;
         }
     };
 
     typedef ncurses_cpix_sink<con_wide> ncurses_cpix_sink_wide;
+    typedef ncurses_cpix_sink<con_basic> ncurses_cpix_sink_basic;
 
     template<typename ascii_dt, typename unicode_dt>
     struct console_ncurses : 
     public ncurses_impl, 
     public ncurses_char_sink { };
 
+    template<typename ascii_dt, typename unicode_dt>
+    struct ncurses_sink_all :
+    public virtual ncurses_cpix_sink<ascii_dt>,
+    public virtual ncurses_cpix_sink<unicode_dt>,
+    public virtual ncurses_char_sink { };
+
+
     template<typename con_base>
     struct console_ncurses_color : 
     public con_base,
-    public virtual ncurses_cpix_sink_wide,
+    public ncurses_sink_all<con_basic, con_wide>,
     public virtual i_color {
         void setColor(con_color color) override {
             attron(COLOR_PAIR(color+1));
@@ -187,6 +198,8 @@ namespace cons {
         }
         con_color last_color;
 
+        using ncurses_sink_all<con_basic, con_wide>::write;
+
         template<typename T>
         void write(T text, con_color color = 1) {
             setColor(color);
@@ -197,6 +210,11 @@ namespace cons {
         void write(con_pos x, con_pos y, T text, con_color color = 1) {
             setColor(color);
             con_base::write(x, y, text);
+        }
+
+        template<typename T>
+        void write(T text, con_size s, con_size e) {
+            con_base::write(text, s, e);
         }
 
         template<typename T>
